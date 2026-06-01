@@ -1,0 +1,61 @@
+<%- include('partials/header') %>
+
+<section class="hero">
+  <h1>Welcome to <span class="brand-highlight">ScrollStop</span></h1>
+  <p class="hero-sub">Track your social media usage and reclaim your time.</p>
+</section>
+
+<section class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon">⏱️</div>
+    <div class="stat-value"><%= stats.totalToday %> min</div>
+    <div class="stat-label">Screen Time Today</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">🎯</div>
+    <div class="stat-value"><%= stats.goalStatus.length %></div>
+    <div class="stat-label">Active Goals</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon">⚠️</div>
+    <div class="stat-value"><%= stats.goalStatus.filter(g => g.overLimit).length %></div>
+    <div class="stat-label">Limits Exceeded</div>
+  </div>
+</section>
+
+<section class="section">
+  <h2 class="section-title">Today's Goal Progress</h2>
+  <% if (stats.goalStatus.length === 0) { %>
+    <div class="empty-state">
+      <p>No goals set yet. <a href="/goals">Add your first goal →</a></p>
+    </div>
+  <% } else { %>
+    <div class="goal-list">
+      <% stats.goalStatus.forEach(g => { %>
+        <div class="goal-card">
+          <div class="goal-header">
+            <span class="platform-badge" style="background-color: <%= g.color %>"><%= g.platform %></span>
+            <span class="goal-time"><%= g.todayMinutes %> / <%= g.limitMinutes %> min</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill <%= g.overLimit ? 'over-limit' : '' %>"
+              style="width: <%= g.percentage %>%; background-color: <%= g.color %>">
+            </div>
+          </div>
+          <% if (g.overLimit) { %>
+            <p class="over-limit-msg">⚠️ Over limit by <%= g.todayMinutes - g.limitMinutes %> min</p>
+          <% } else { %>
+            <p class="under-limit-msg">✅ <%= g.limitMinutes - g.todayMinutes %> min remaining</p>
+          <% } %>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+</section>
+
+<div class="cta-row">
+  <a href="/log" class="btn btn-primary">+ Log a Session</a>
+  <a href="/insights" class="btn btn-secondary">View Insights</a>
+</div>
+
+<%- include('partials/footer') %>

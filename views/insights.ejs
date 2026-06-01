@@ -1,0 +1,77 @@
+<%- include('partials/header') %>
+
+<section class="section">
+  <h1 class="page-title">Insights</h1>
+  <p class="page-sub">Your scrolling patterns at a glance.</p>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon">📊</div>
+      <div class="stat-value"><%= sessions.length %></div>
+      <div class="stat-label">Total Sessions</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">⏳</div>
+      <div class="stat-value"><%= sessions.reduce((s, x) => s + x.minutes, 0) %> min</div>
+      <div class="stat-label">All-Time Usage</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">📱</div>
+      <div class="stat-value"><%= Object.keys(platformTotals).length %></div>
+      <div class="stat-label">Platforms Tracked</div>
+    </div>
+  </div>
+
+  <h2 class="section-title" style="margin-top: 2rem;">Usage by Platform</h2>
+  <% if (Object.keys(platformTotals).length === 0) { %>
+    <div class="empty-state"><p>No data yet. Start logging sessions!</p></div>
+  <% } else { %>
+    <div class="insight-bars">
+      <% const maxVal = Math.max(...Object.values(platformTotals)); %>
+      <% Object.entries(platformTotals).forEach(([platform, total]) => { %>
+        <%
+          const goal = goals.find(g => g.platform === platform);
+          const color = goal ? goal.color : '#6366f1';
+          const pct = Math.round((total / maxVal) * 100);
+        %>
+        <div class="insight-bar-row">
+          <span class="insight-platform"><%= platform %></span>
+          <div class="insight-bar-bg">
+            <div class="insight-bar-fill" style="width: <%= pct %>%; background-color: <%= color %>"></div>
+          </div>
+          <span class="insight-total"><%= total %> min</span>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+
+  <h2 class="section-title" style="margin-top: 2rem;">vs. Your Goals</h2>
+  <% if (goals.length === 0) { %>
+    <div class="empty-state"><p>No goals configured. <a href="/goals">Set goals →</a></p></div>
+  <% } else { %>
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Platform</th>
+            <th>Daily Limit</th>
+            <th>All-Time Usage</th>
+            <th>Sessions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% goals.forEach(g => { %>
+            <tr>
+              <td><span class="platform-badge" style="background-color: <%= g.color %>"><%= g.platform %></span></td>
+              <td><%= g.limitMinutes %> min</td>
+              <td><%= platformTotals[g.platform] || 0 %> min</td>
+              <td><%= sessions.filter(s => s.platform === g.platform).length %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</section>
+
+<%- include('partials/footer') %>

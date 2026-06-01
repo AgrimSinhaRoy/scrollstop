@@ -1,0 +1,11 @@
+[
+  {
+    "fsi": 72,
+    "age": "16",
+    "gender": "male",
+    "country": "India",
+    "passiveHours": 3,
+    "activeHours": 1,
+    "sleepHours": 7
+  }
+]

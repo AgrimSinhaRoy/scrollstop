@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ScrollStop — Track Your Focus</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #070810;
+    --surface: #0f1120;
+    --surface2: #161929;
+    --border: rgba(255,255,255,0.07);
+    --accent: #6C63FF;
+    --accent2: #FF6B6B;
+    --accent3: #43E97B;
+    --text: #F0F0FF;
+    --muted: rgba(240,240,255,0.45);
+    --passive: #FF6B6B;
+    --active: #43E97B;
+    --mixed: #FFB347;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── BACKGROUND ORBS ── */
+  .bg-orbs {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden;
+  }
+  .orb {
+    position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.18;
+    animation: drift 12s ease-in-out infinite alternate;
+  }
+  .orb1 { width: 500px; height: 500px; background: var(--accent); top: -100px; left: -100px; animation-delay: 0s; }
+  .orb2 { width: 400px; height: 400px; background: var(--accent2); bottom: -80px; right: -80px; animation-delay: -4s; }
+  .orb3 { width: 300px; height: 300px; background: var(--accent3); top: 40%; left: 50%; animation-delay: -8s; }
+
+  @keyframes drift {
+    0% { transform: translate(0,0) scale(1); }
+    100% { transform: translate(40px, 30px) scale(1.1); }
+  }
+
+  /* ── LAYOUT ── */
+  .wrapper {
+    position: relative; z-index: 1;
+    max-width: 680px; margin: 0 auto;
+    padding: 3rem 1.5rem 6rem;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    text-align: center; margin-bottom: 3rem;
+    animation: fadeDown 0.8s ease both;
+  }
+  .logo {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800;
+    letter-spacing: -0.5px; margin-bottom: 12px;
+  }
+  .logo-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 20px var(--accent);
+    animation: pulse 2s ease infinite;
+  }
+  @keyframes pulse {
+    0%,100% { box-shadow: 0 0 10px var(--accent); }
+    50% { box-shadow: 0 0 30px var(--accent), 0 0 60px var(--accent); }
+  }
+  .header-sub {
+    font-size: 14px; color: var(--muted); line-height: 1.6;
+  }
+
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── PROGRESS BAR ── */
+  .progress-track {
+    height: 2px; background: var(--border);
+    border-radius: 1px; margin-bottom: 2.5rem;
+    animation: fadeDown 0.8s ease 0.2s both;
+  }
+  .progress-fill {
+    height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent3));
+    border-radius: 1px; transition: width 0.5s ease;
+  }
+  .progress-label {
+    display: flex; justify-content: space-between;
+    font-size: 11px; color: var(--muted); margin-top: 6px;
+  }
+
+  /* ── SECTION CARD ── */
+  .section-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 1.75rem;
+    margin-bottom: 1rem;
+    animation: fadeUp 0.6s ease both;
+    transition: border-color 0.2s;
+  }
+  .section-card:hover { border-color: rgba(108,99,255,0.3); }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-header {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 1.25rem;
+  }
+  .section-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .section-title {
+    font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700;
+    letter-spacing: -0.2px;
+  }
+  .section-sub { font-size: 12px; color: var(--muted); margin-top: 1px; }
+
+  /* ── INPUT GROUPS ── */
+  .input-group { margin-bottom: 1.25rem; }
+  .input-group:last-child { margin-bottom: 0; }
+  .input-label {
+    font-size: 12px; font-weight: 500; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin-bottom: 8px; display: block;
+  }
+
+  /* slider */
+  .slider-row { display: flex; align-items: center; gap: 14px; }
+  .slider-row input[type=range] {
+    flex: 1; -webkit-appearance: none; height: 4px;
+    background: var(--surface2); border-radius: 2px; outline: none;
+  }
+  .slider-row input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 18px; height: 18px;
+    border-radius: 50%; background: var(--accent);
+    box-shadow: 0 0 10px var(--accent); cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .slider-row input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+  .slider-val {
+    font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700;
+    min-width: 56px; text-align: right; color: var(--text);
+  }
+  .slider-val span { font-size: 12px; color: var(--muted); font-weight: 400; }
+
+  /* radio pills */
+  .pill-group { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pill-option { display: none; }
+  .pill-label {
+    padding: 8px 16px; border-radius: 40px;
+    border: 1px solid var(--border);
+    font-size: 13px; color: var(--muted);
+    cursor: pointer; transition: all 0.2s;
+    user-select: none;
+  }
+  .pill-option:checked + .pill-label {
+    background: var(--accent); border-color: var(--accent);
+    color: white; box-shadow: 0 0 20px rgba(108,99,255,0.4);
+  }
+
+  /* text input */
+  .text-input {
+    width: 100%; height: 44px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 12px;
+    color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px;
+    padding: 0 14px; outline: none; transition: border-color 0.2s;
+  }
+  .text-input:focus { border-color: var(--accent); }
+  .text-input::placeholder { color: var(--muted); }
+
+  /* ── APP GRID ── */
+  .app-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+  .app-tile {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 10px 12px; cursor: pointer;
+    transition: all 0.2s; user-select: none;
+  }
+  .app-tile:hover { border-color: rgba(108,99,255,0.4); transform: translateY(-1px); }
+  .app-tile.sel-passive { border-color: var(--passive); background: rgba(255,107,107,0.1); }
+  .app-tile.sel-active { border-color: var(--active); background: rgba(67,233,123,0.1); }
+  .app-tile.sel-mixed { border-color: var(--mixed); background: rgba(255,179,71,0.1); }
+  .app-tile-name { font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+  .app-tile-badge {
+    font-size: 10px; font-weight: 500; padding: 2px 7px; border-radius: 20px;
+    display: inline-block;
+  }
+  .badge-passive { background: rgba(255,107,107,0.2); color: var(--passive); }
+  .badge-active { background: rgba(67,233,123,0.2); color: var(--active); }
+  .badge-mixed { background: rgba(255,179,71,0.2); color: var(--mixed); }
+  .app-hrs-row {
+    display: none; align-items: center; gap: 6px; margin-top: 8px;
+  }
+  .app-hrs-row.visible { display: flex; }
+  .app-hrs-row input[type=range] {
+    flex: 1; -webkit-appearance: none; height: 3px;
+    background: var(--border); border-radius: 2px; outline: none;
+  }
+  .app-hrs-row input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 14px; height: 14px;
+    border-radius: 50%; background: var(--accent); cursor: pointer;
+  }
+  .app-hrs-val { font-size: 11px; color: var(--muted); min-width: 28px; }
+  .override-btns { display: none; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+  .override-btns.visible { display: flex; }
+  .ov-btn {
+    font-size: 10px; padding: 3px 8px; border-radius: 20px;
+    border: 1px solid var(--border); background: transparent;
+    color: var(--muted); cursor: pointer; transition: all 0.15s;
+  }
+  .ov-btn.active { background: rgba(67,233,123,0.2); color: var(--active); border-color: var(--active); }
+  .ov-btn.passive { background: rgba(255,107,107,0.2); color: var(--passive); border-color: var(--passive); }
+  .ov-btn.mixed { background: rgba(255,179,71,0.2); color: var(--mixed); border-color: var(--mixed); }
+
+  /* custom app add */
+  .add-row { display: flex; gap: 8px; margin-top: 1rem; }
+  .add-row .text-input { flex: 1; }
+  .add-btn {
+    padding: 0 18px; height: 44px; border-radius: 12px;
+    border: 1px solid var(--accent); background: transparent;
+    color: var(--accent); font-size: 13px; cursor: pointer;
+    transition: all 0.2s; white-space: nowrap;
+  }
+  .add-btn:hover { background: var(--accent); color: white; }
+  .add-type-row { display: flex; gap: 6px; margin-top: 8px; }
+  .add-type-btn {
+    padding: 5px 14px; border-radius: 20px; font-size: 12px;
+    border: 1px solid var(--border); background: transparent;
+    color: var(--muted); cursor: pointer; transition: all 0.2s;
+  }
+  .add-type-btn.sel { color: white; }
+  .add-type-btn.sel-passive { background: rgba(255,107,107,0.3); border-color: var(--passive); color: var(--passive); }
+  .add-type-btn.sel-active { background: rgba(67,233,123,0.3); border-color: var(--active); color: var(--active); }
+  .add-type-btn.sel-mixed { background: rgba(255,179,71,0.3); border-color: var(--mixed); color: var(--mixed); }
+
+  /* ── SUMMARY STRIP ── */
+  .summary-strip {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 1rem 1.25rem;
+    display: grid; grid-template-columns: repeat(3,1fr);
+    gap: 1rem; margin-bottom: 1rem;
+  }
+  .sum-col { text-align: center; }
+  .sum-val { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; }
+  .sum-label { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* ── SUBMIT BUTTON ── */
+  .submit-btn {
+    width: 100%; padding: 16px; border-radius: 16px;
+    background: linear-gradient(135deg, var(--accent), #9B59B6);
+    border: none; color: white; font-family: 'Syne', sans-serif;
+    font-size: 16px; font-weight: 700; cursor: pointer;
+    letter-spacing: 0.3px; transition: all 0.3s;
+    box-shadow: 0 8px 32px rgba(108,99,255,0.4);
+    position: relative; overflow: hidden;
+  }
+  .submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(108,99,255,0.6);
+  }
+  .submit-btn:active { transform: translateY(0); }
+  .submit-btn::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, transparent, rgba(255,255,255,0.1));
+  }
+
+  /* ── SUCCESS STATE ── */
+  .success-screen {
+    display: none; text-align: center;
+    padding: 4rem 2rem;
+    animation: fadeUp 0.6s ease both;
+  }
+  .success-screen.visible { display: block; }
+  .success-icon {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: rgba(67,233,123,0.15); border: 2px solid var(--active);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px; margin: 0 auto 1.5rem;
+    animation: popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+  @keyframes popIn {
+    from { transform: scale(0); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .success-title {
+    font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800;
+    margin-bottom: 8px;
+  }
+  .success-sub { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+  /* ── FSI PREVIEW ── */
+  .fsi-preview {
+    background: var(--surface2); border-radius: 16px; padding: 1.5rem;
+    margin-top: 1.5rem; border: 1px solid var(--border);
+  }
+  .fsi-num {
+    font-family: 'Syne', sans-serif; font-size: 64px; font-weight: 800;
+    line-height: 1; text-align: center; margin-bottom: 4px;
+  }
+  .fsi-label-text { text-align: center; font-size: 13px; color: var(--muted); }
+  .fsi-bar-track {
+    height: 6px; background: var(--border); border-radius: 3px; margin-top: 16px;
+  }
+  .fsi-bar-fill {
+    height: 100%; border-radius: 3px;
+    transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* animation delays for stagger */
+  .section-card:nth-child(1) { animation-delay: 0.1s; }
+  .section-card:nth-child(2) { animation-delay: 0.2s; }
+  .section-card:nth-child(3) { animation-delay: 0.3s; }
+  .section-card:nth-child(4) { animation-delay: 0.4s; }
+  .section-card:nth-child(5) { animation-delay: 0.5s; }
+  .section-card:nth-child(6) { animation-delay: 0.6s; }
+
+  /* cat label */
+  .cat-label {
+    font-size: 11px; font-weight: 500; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin: 1rem 0 0.6rem;
+  }
+
+  /* mood faces */
+  .mood-row { display: flex; justify-content: space-between; gap: 6px; }
+  .mood-opt { display: none; }
+  .mood-face {
+    flex: 1; text-align: center; padding: 10px 6px;
+    border: 1px solid var(--border); border-radius: 14px;
+    cursor: pointer; transition: all 0.2s; font-size: 22px;
+  }
+  .mood-face:hover { border-color: rgba(108,99,255,0.4); transform: scale(1.05); }
+  .mood-opt:checked + .mood-face {
+    border-color: var(--accent); background: rgba(108,99,255,0.15);
+    box-shadow: 0 0 16px rgba(108,99,255,0.3);
+  }
+  .mood-val { font-size: 11px; color: var(--muted); margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<div class="bg-orbs">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+</div>
+
+<div class="wrapper">
+
+  <div class="header">
+    <div class="logo">
+      <div class="logo-dot"></div>
+      ScrollStop
+    </div>
+    <div class="header-sub">Track your screen time. Understand its real impact.<br>Takes 3 minutes — changes how you see your day.</div>
+  </div>
+
+  <div class="progress-track">
+    <div class="progress-fill" id="prog" style="width:0%"></div>
+  </div>
+  <div class="progress-label">
+    <span>Getting started</span>
+    <span id="prog-text">0 / 6 sections</span>
+  </div>
+
+  <div id="main-form">
+
+    <!-- SECTION 1: About you -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(108,99,255,0.15);">👤</div>
+        <div>
+          <div class="section-title">About you</div>
+          <div class="section-sub">Quick demographics — anonymous</div>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">Age</label>
+        <div class="pill-group" id="age-group">
+          <input type="radio" name="age" id="a13" value="13" class="pill-option" onchange="updateProgress()"><label for="a13" class="pill-label">13</label>
+          <input type="radio" name="age" id="a14" value="14" class="pill-option" onchange="updateProgress()"><label for="a14" class="pill-label">14</label>
+          <input type="radio" name="age" id="a15" value="15" class="pill-option" onchange="updateProgress()"><label for="a15" class="pill-label">15</label>
+          <input type="radio" name="age" id="a16" value="16" class="pill-option" onchange="updateProgress()"><label for="a16" class="pill-label">16</label>
+          <input type="radio" name="age" id="a17" value="17" class="pill-option" onchange="updateProgress()"><label for="a17" class="pill-label">17</label>
+          <input type="radio" name="age" id="a18" value="18" class="pill-option" onchange="updateProgress()"><label for="a18" class="pill-label">18</label>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">Gender</label>
+        <div class="pill-group">
+          <input type="radio" name="gender" id="gm" value="male" class="pill-option" onchange="updateProgress()"><label for="gm" class="pill-label">Male</label>
+          <input type="radio" name="gender" id="gf" value="female" class="pill-option" onchange="updateProgress()"><label for="gf" class="pill-label">Female</label>
+          <input type="radio" name="gender" id="gnb" value="nonbinary" class="pill-option" onchange="updateProgress()"><label for="gnb" class="pill-label">Non-binary</label>
+          <input type="radio" name="gender" id="gns" value="notsay" class="pill-option" onchange="updateProgress()"><label for="gns" class="pill-label">Prefer not to say</label>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">Country</label>
+        <input type="text" class="text-input" id="country" placeholder="e.g. India, USA, UK..." oninput="updateProgress()">
+      </div>
+    </div>
+
+    <!-- SECTION 2: Screen time -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(255,107,107,0.15);">📱</div>
+        <div>
+          <div class="section-title">Screen time habits</div>
+          <div class="section-sub">Typical daily usage</div>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">Passive screen time <span style="color:var(--passive);">scrolling · reels · entertainment</span></label>
+        <div class="slider-row">
+          <input type="range" min="0" max="8" step="0.5" value="3" id="passive-sl" oninput="sl('passive',this.value);updateProgress();updateSummary();">
+          <div class="slider-val"><span id="passive-v">3</span> <span>hrs</span></div>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">Active screen time <span style="color:var(--active);">coding · learning · creating</span></label>
+        <div class="slider-row">
+          <input type="range" min="0" max="6" step="0.5" value="1" id="active-sl" oninput="sl('active',this.value);updateProgress();updateSummary();">
+          <div class="slider-val"><span id="active-v">1</span> <span>hrs</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 3: Apps used -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(67,233,123,0.15);">🎮</div>
+        <div>
+          <div class="section-title">Apps you used today</div>
+          <div class="section-sub">Tap to select · override the classification if needed</div>
+        </div>
+      </div>
+
+      <div class="cat-label">Social media</div>
+      <div class="app-grid" id="social-grid"></div>
+
+      <div class="cat-label" style="margin-top:1.25rem;">Games</div>
+      <div class="app-grid" id="games-grid"></div>
+
+      <div class="cat-label" style="margin-top:1.25rem;">Add an app not listed</div>
+      <div class="add-row">
+        <input type="text" class="text-input" id="custom-name" placeholder="App name...">
+        <button class="add-btn" onclick="addCustomApp()">+ Add</button>
+      </div>
+      <div class="add-type-row">
+        <button class="add-type-btn sel-passive" id="ct-passive" onclick="setCustomType('passive')">Passive</button>
+        <button class="add-type-btn" id="ct-active" onclick="setCustomType('active')">Active</button>
+        <button class="add-type-btn" id="ct-mixed" onclick="setCustomType('mixed')">Mixed</button>
+      </div>
+      <div class="app-grid" id="custom-grid" style="margin-top:10px;"></div>
+    </div>
+
+    <!-- SECTION 4: Sleep -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(108,99,255,0.15);">🌙</div>
+        <div>
+          <div class="section-title">Sleep</div>
+          <div class="section-sub">Last night</div>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">Hours slept</label>
+        <div class="slider-row">
+          <input type="range" min="4" max="11" step="0.5" value="7" id="sleep-sl" oninput="sl('sleep',this.value);updateProgress();updateSummary();">
+          <div class="slider-val"><span id="sleep-v">7</span> <span>hrs</span></div>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">Sleep quality</label>
+        <div class="pill-group">
+          <input type="radio" name="squal" id="sq1" value="1" class="pill-option" onchange="updateProgress()"><label for="sq1" class="pill-label">😴 Very poor</label>
+          <input type="radio" name="squal" id="sq2" value="2" class="pill-option" onchange="updateProgress()"><label for="sq2" class="pill-label">😐 Poor</label>
+          <input type="radio" name="squal" id="sq3" value="3" class="pill-option" onchange="updateProgress()"><label for="sq3" class="pill-label">🙂 OK</label>
+          <input type="radio" name="squal" id="sq4" value="4" class="pill-option" onchange="updateProgress()"><label for="sq4" class="pill-label">😊 Good</label>
+          <input type="radio" name="squal" id="sq5" value="5" class="pill-option" onchange="updateProgress()"><label for="sq5" class="pill-label">🌟 Excellent</label>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">Used screens before sleeping?</label>
+        <div class="pill-group">
+          <input type="radio" name="bsleep" id="bs1" value="always" class="pill-option" onchange="updateProgress()"><label for="bs1" class="pill-label">Every night</label>
+          <input type="radio" name="bsleep" id="bs2" value="most" class="pill-option" onchange="updateProgress()"><label for="bs2" class="pill-label">Most nights</label>
+          <input type="radio" name="bsleep" id="bs3" value="sometimes" class="pill-option" onchange="updateProgress()"><label for="bs3" class="pill-label">Sometimes</label>
+          <input type="radio" name="bsleep" id="bs4" value="never" class="pill-option" onchange="updateProgress()"><label for="bs4" class="pill-label">Never</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 5: Mood & Wellbeing -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(255,179,71,0.15);">🧠</div>
+        <div>
+          <div class="section-title">Mood & Wellbeing</div>
+          <div class="section-sub">How you've felt today</div>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">Overall mood today</label>
+        <div class="mood-row">
+          <span><input type="radio" name="mood" id="m1" value="1" class="mood-opt" onchange="updateProgress()"><label for="m1" class="mood-face">😫<div class="mood-val">Terrible</div></label></span>
+          <span><input type="radio" name="mood" id="m2" value="2" class="mood-opt" onchange="updateProgress()"><label for="m2" class="mood-face">😟<div class="mood-val">Bad</div></label></span>
+          <span><input type="radio" name="mood" id="m3" value="3" class="mood-opt" onchange="updateProgress()"><label for="m3" class="mood-face">😐<div class="mood-val">Okay</div></label></span>
+          <span><input type="radio" name="mood" id="m4" value="4" class="mood-opt" onchange="updateProgress()"><label for="m4" class="mood-face">🙂<div class="mood-val">Good</div></label></span>
+          <span><input type="radio" name="mood" id="m5" value="5" class="mood-opt" onchange="updateProgress()"><label for="m5" class="mood-face">😄<div class="mood-val">Great</div></label></span>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">Felt anxious or stressed today?</label>
+        <div class="pill-group">
+          <input type="radio" name="anxiety" id="an1" value="1" class="pill-option" onchange="updateProgress()"><label for="an1" class="pill-label">Not at all</label>
+          <input type="radio" name="anxiety" id="an2" value="2" class="pill-option" onchange="updateProgress()"><label for="an2" class="pill-label">A little</label>
+          <input type="radio" name="anxiety" id="an3" value="3" class="pill-option" onchange="updateProgress()"><label for="an3" class="pill-label">Moderate</label>
+          <input type="radio" name="anxiety" id="an4" value="4" class="pill-option" onchange="updateProgress()"><label for="an4" class="pill-label">Very anxious</label>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">Personal stress today (unrelated to screens)</label>
+        <div class="pill-group">
+          <input type="radio" name="stress" id="st1" value="none" class="pill-option" onchange="updateProgress()"><label for="st1" class="pill-label">None</label>
+          <input type="radio" name="stress" id="st2" value="mild" class="pill-option" onchange="updateProgress()"><label for="st2" class="pill-label">Mild</label>
+          <input type="radio" name="stress" id="st3" value="moderate" class="pill-option" onchange="updateProgress()"><label for="st3" class="pill-label">Moderate</label>
+          <input type="radio" name="stress" id="st4" value="significant" class="pill-option" onchange="updateProgress()"><label for="st4" class="pill-label">Significant</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 6: Focus & Academic -->
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(67,233,123,0.15);">📚</div>
+        <div>
+          <div class="section-title">Focus & Academics</div>
+          <div class="section-sub">Study habits today</div>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">Study hours today</label>
+        <div class="slider-row">
+          <input type="range" min="0" max="8" step="0.5" value="2" id="study-sl" oninput="sl('study',this.value);updateProgress();updateSummary();">
+          <div class="slider-val"><span id="study-v">2</span> <span>hrs</span></div>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">Focus quality during study</label>
+        <div class="pill-group">
+          <input type="radio" name="focus" id="f1" value="1" class="pill-option" onchange="updateProgress()"><label for="f1" class="pill-label">Couldn't focus</label>
+          <input type="radio" name="focus" id="f2" value="2" class="pill-option" onchange="updateProgress()"><label for="f2" class="pill-label">Distracted</label>
+          <input type="radio" name="focus" id="f3" value="3" class="pill-option" onchange="updateProgress()"><label for="f3" class="pill-label">Moderate</label>
+          <input type="radio" name="focus" id="f4" value="4" class="pill-option" onchange="updateProgress()"><label for="f4" class="pill-label">Good</label>
+          <input type="radio" name="focus" id="f5" value="5" class="pill-option" onchange="updateProgress()"><label for="f5" class="pill-label">Deep focus</label>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">Phone checks during study</label>
+        <div class="pill-group">
+          <input type="radio" name="checks" id="ch0" value="0" class="pill-option" onchange="updateProgress()"><label for="ch0" class="pill-label">0 times</label>
+          <input type="radio" name="checks" id="ch1" value="3" class="pill-option" onchange="updateProgress()"><label for="ch1" class="pill-label">1–3</label>
+          <input type="radio" name="checks" id="ch2" value="6" class="pill-option" onchange="updateProgress()"><label for="ch2" class="pill-label">4–6</label>
+          <input type="radio" name="checks" id="ch3" value="10" class="pill-option" onchange="updateProgress()"><label for="ch3" class="pill-label">7–10</label>
+          <input type="radio" name="checks" id="ch4" value="15" class="pill-option" onchange="updateProgress()"><label for="ch4" class="pill-label">10+</label>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">Academic performance this week (self-rated)</label>
+        <div class="pill-group">
+          <input type="radio" name="acad" id="ac1" value="2" class="pill-option" onchange="updateProgress()"><label for="ac1" class="pill-label">Poor</label>
+          <input type="radio" name="acad" id="ac2" value="4" class="pill-option" onchange="updateProgress()"><label for="ac2" class="pill-label">Below average</label>
+          <input type="radio" name="acad" id="ac3" value="6" class="pill-option" onchange="updateProgress()"><label for="ac3" class="pill-label">Average</label>
+          <input type="radio" name="acad" id="ac4" value="8" class="pill-option" onchange="updateProgress()"><label for="ac4" class="pill-label">Good</label>
+          <input type="radio" name="acad" id="ac5" value="10" class="pill-option" onchange="updateProgress()"><label for="ac5" class="pill-label">Excellent</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUMMARY + SUBMIT -->
+    <div class="summary-strip">
+      <div class="sum-col">
+        <div class="sum-val" id="s-passive" style="color:var(--passive);">3.0</div>
+        <div class="sum-label">Passive hrs</div>
+      </div>
+      <div class="sum-col">
+        <div class="sum-val" id="s-active" style="color:var(--active);">1.0</div>
+        <div class="sum-label">Active hrs</div>
+      </div>
+      <div class="sum-col">
+        <div class="sum-val" id="s-sleep" style="color:var(--accent);">7.0</div>
+        <div class="sum-label">Sleep hrs</div>
+      </div>
+    </div>
+
+    <button class="submit-btn" onclick="submitForm()">
+      Calculate my Focus Score →
+    </button>
+
+  </div><!-- end main-form -->
+
+  <!-- SUCCESS SCREEN -->
+  <div class="success-screen" id="success-screen">
+    <div class="success-icon">✓</div>
+    <div class="success-title">Here's your Focus Score</div>
+    <div class="success-sub">Based on your inputs today — backed by research on adolescent screen time and wellbeing.</div>
+    <div class="fsi-preview">
+      <div class="fsi-num" id="fsi-display" style="color:var(--active);">—</div>
+      <div class="fsi-label-text" id="fsi-verdict">Calculating...</div>
+      <div class="fsi-bar-track">
+        <div class="fsi-bar-fill" id="fsi-fill" style="width:0%;background:var(--active);"></div>
+      </div>
+    </div>
+    <button class="submit-btn" style="margin-top:1.5rem;" onclick="resetForm()">
+      Log again tomorrow →
+    </button>
+  </div>
+
+</div><!-- end wrapper -->
+
+<script>
+// ── SLIDER DISPLAY ──
+function sl(id, val) {
+  document.getElementById(id+'-v').textContent = val;
+}
+
+// ── APP DATA ──
+var socialApps = [
+  {id:'instagram',name:'Instagram',def:'passive',ctx:[['Scrolling/reels','passive'],['Posting content','active'],['DMs','mixed']]},
+  {id:'tiktok',name:'TikTok',def:'passive',ctx:[['Watching','passive'],['Creating','active']]},
+  {id:'youtube',name:'YouTube',def:'mixed',ctx:[['Entertainment','passive'],['Tutorials','active'],['Music','mixed']]},
+  {id:'snapchat',name:'Snapchat',def:'passive',ctx:[['Stories','passive'],['Video calls','mixed']]},
+  {id:'twitter',name:'Twitter / X',def:'passive',ctx:[['Browsing','passive'],['Posting','active']]},
+  {id:'reddit',name:'Reddit',def:'mixed',ctx:[['Memes','passive'],['Discussions','mixed'],['Writing','active']]},
+  {id:'whatsapp',name:'WhatsApp',def:'mixed',ctx:[['Chatting','mixed'],['Forwarding','passive']]},
+  {id:'discord',name:'Discord',def:'mixed',ctx:[['Gaming chat','mixed'],['Study server','active'],['Browsing','passive']]},
+  {id:'pinterest',name:'Pinterest',def:'passive',ctx:[['Browsing','passive'],['Project boards','active']]},
+  {id:'bereal',name:'BeReal',def:'mixed',ctx:[['Sharing','mixed']]}
+];
+
+var gameApps = [
+  {id:'roblox',name:'Roblox',def:'mixed',ctx:[['Playing','passive'],['Developing','active'],['Exploring','passive']]},
+  {id:'minecraft',name:'Minecraft',def:'mixed',ctx:[['Creative build','active'],['Survival','mixed'],['Just playing','passive']]},
+  {id:'pubg',name:'PUBG / BGMI',def:'passive',ctx:[['Casual','passive'],['Competitive','mixed']]},
+  {id:'freefire',name:'Free Fire',def:'passive',ctx:[['Casual','passive'],['Ranked','mixed']]},
+  {id:'fortnite',name:'Fortnite',def:'passive',ctx:[['Casual','passive'],['Creative mode','active']]},
+  {id:'codmobile',name:'COD Mobile',def:'passive',ctx:[['Casual','passive'],['Ranked','mixed']]},
+  {id:'chess',name:'Chess.com',def:'active',ctx:[['Playing','active'],['Analysis','active']]},
+  {id:'coc',name:'Clash of Clans',def:'passive',ctx:[['Farming','passive'],['Planning','mixed']]},
+  {id:'pokemon',name:'Pokémon GO',def:'mixed',ctx:[['Walking','active'],['Raids','mixed']]},
+  {id:'duolingo',name:'Duolingo',def:'active',ctx:[['Lessons','active']]},
+  {id:'scratch',name:'Scratch',def:'active',ctx:[['Building','active'],['Learning','active']]},
+  {id:'genshin',name:'Genshin Impact',def:'passive',ctx:[['Exploring','passive'],['Build planning','mixed']]}
+];
+
+var appState = {};
+var customTypeVal = 'passive';
+
+function defBadgeClass(t) {
+  return t==='active'?'badge-active':t==='passive'?'badge-passive':'badge-mixed';
+}
+function defLabel(t) {
+  return t==='active'?'Active':t==='passive'?'Passive':'Mixed';
+}
+function tileClass(t) {
+  return 'sel-'+t;
+}
+
+function renderApps(arr, gridId) {
+  var g = document.getElementById(gridId);
+  arr.forEach(function(app) {
+    appState[app.id] = {selected:false,type:app.def,hours:1,name:app.name};
+    var tile = document.createElement('div');
+    tile.className = 'app-tile';
+    tile.id = 'tile-'+app.id;
+    tile.innerHTML =
+      '<div class="app-tile-name">'+app.name+'</div>'+
+      '<div class="app-tile-badge '+defBadgeClass(app.def)+'" id="tbadge-'+app.id+'">'+defLabel(app.def)+'</div>'+
+      '<div class="app-hrs-row" id="thrs-'+app.id+'">'+
+        '<input type="range" min="0.5" max="6" step="0.5" value="1" onclick="event.stopPropagation()" oninput="event.stopPropagation();updAppHrs(\''+app.id+'\',this.value)">'+
+        '<div class="app-hrs-val" id="thv-'+app.id+'">1h</div>'+
+      '</div>'+
+      '<div class="override-btns" id="tov-'+app.id+'">'+
+        app.ctx.map(function(c){
+          return '<button class="ov-btn '+c[1]+'" onclick="event.stopPropagation();ovType(\''+app.id+'\',\''+c[1]+'\',this)">'+c[0]+'</button>';
+        }).join('')+
+      '</div>';
+    tile.onclick = function(){ toggleTile(app.id); };
+    g.appendChild(tile);
+  });
+}
+
+function toggleTile(id) {
+  var s = appState[id];
+  s.selected = !s.selected;
+  var tile = document.getElementById('tile-'+id);
+  var hrs = document.getElementById('thrs-'+id);
+  var ov = document.getElementById('tov-'+id);
+  if (s.selected) {
+    tile.className = 'app-tile ' + tileClass(s.type);
+    hrs.classList.add('visible');
+    ov.classList.add('visible');
+  } else {
+    tile.className = 'app-tile';
+    hrs.classList.remove('visible');
+    ov.classList.remove('visible');
+  }
+}
+
+function updAppHrs(id, val) {
+  appState[id].hours = parseFloat(val);
+  document.getElementById('thv-'+id).textContent = val+'h';
+}
+
+function ovType(id, type, btn) {
+  appState[id].type = type;
+  var tile = document.getElementById('tile-'+id);
+  tile.className = 'app-tile sel-'+type;
+  var badge = document.getElementById('tbadge-'+id);
+  badge.className = 'app-tile-badge '+defBadgeClass(type);
+  badge.textContent = defLabel(type);
+  var allBtns = document.querySelectorAll('#tov-'+id+' .ov-btn');
+  allBtns.forEach(function(b){ b.className='ov-btn'; });
+  btn.className = 'ov-btn '+type;
+}
+
+function setCustomType(t) {
+  customTypeVal = t;
+  ['passive','active','mixed'].forEach(function(x){
+    var b = document.getElementById('ct-'+x);
+    b.className = 'add-type-btn' + (x===t?' sel-'+x:'');
+  });
+}
+
+function addCustomApp() {
+  var name = document.getElementById('custom-name').value.trim();
+  if (!name) return;
+  var id = 'c-'+Date.now();
+  var app = {id:id,name:name,def:customTypeVal,ctx:[['Using it',customTypeVal]]};
+  appState[id] = {selected:false,type:customTypeVal,hours:1,name:name};
+  var g = document.getElementById('custom-grid');
+  var tile = document.createElement('div');
+  tile.className = 'app-tile';
+  tile.id = 'tile-'+id;
+  tile.innerHTML =
+    '<div class="app-tile-name">'+name+'</div>'+
+    '<div class="app-tile-badge '+defBadgeClass(customTypeVal)+'" id="tbadge-'+id+'">'+defLabel(customTypeVal)+'</div>'+
+    '<div class="app-hrs-row" id="thrs-'+id+'">'+
+      '<input type="range" min="0.5" max="6" step="0.5" value="1" onclick="event.stopPropagation()" oninput="event.stopPropagation();updAppHrs(\''+id+'\',this.value)">'+
+      '<div class="app-hrs-val" id="thv-'+id+'">1h</div>'+
+    '</div>'+
+    '<div class="override-btns" id="tov-'+id+'">'+
+      '<button class="ov-btn passive" onclick="event.stopPropagation();ovType(\''+id+'\',\'passive\',this)">Passive</button>'+
+      '<button class="ov-btn active" onclick="event.stopPropagation();ovType(\''+id+'\',\'active\',this)">Active</button>'+
+      '<button class="ov-btn mixed" onclick="event.stopPropagation();ovType(\''+id+'\',\'mixed\',this)">Mixed</button>'+
+    '</div>';
+  tile.onclick = function(){ toggleTile(id); };
+  g.appendChild(tile);
+  document.getElementById('custom-name').value = '';
+}
+
+// ── PROGRESS ──
+function updateProgress() {
+  var done = 0;
+  if (document.querySelector('input[name=age]:checked')) done++;
+  if (document.querySelector('input[name=gender]:checked')) done++;
+  if (document.getElementById('country').value.trim()) done++;
+  if (document.querySelector('input[name=squal]:checked')) done++;
+  if (document.querySelector('input[name=mood]:checked')) done++;
+  if (document.querySelector('input[name=focus]:checked')) done++;
+  var pct = Math.round((done/6)*100);
+  document.getElementById('prog').style.width = pct+'%';
+  document.getElementById('prog-text').textContent = done+' / 6 sections';
+}
+
+// ── SUMMARY ──
+function updateSummary() {
+  document.getElementById('s-passive').textContent = parseFloat(document.getElementById('passive-sl').value).toFixed(1);
+  document.getElementById('s-active').textContent = parseFloat(document.getElementById('active-sl').value).toFixed(1);
+  document.getElementById('s-sleep').textContent = parseFloat(document.getElementById('sleep-sl').value).toFixed(1);
+}
+
+// ── FSI CALCULATION ──
+function calcFSI() {
+  var passive = parseFloat(document.getElementById('passive-sl').value);
+  var active = parseFloat(document.getElementById('active-sl').value);
+  var sleep = parseFloat(document.getElementById('sleep-sl').value);
+  var study = parseFloat(document.getElementById('study-sl').value);
+  var moodEl = document.querySelector('input[name=mood]:checked');
+  var mood = moodEl ? parseInt(moodEl.value) : 3;
+  var focusEl = document.querySelector('input[name=focus]:checked');
+  var focus = focusEl ? parseInt(focusEl.value) : 3;
+  var acadEl = document.querySelector('input[name=acad]:checked');
+  var acad = acadEl ? parseInt(acadEl.value) : 6;
+
+  var S = Math.max(0, Math.min(100, 100-(passive*25)-(active*8)));
+  var sleepMap = {4:0,4.5:10,5:20,5.5:35,6:50,6.5:63,7:75,7.5:88,8:100,8.5:95,9:88,9.5:80,10:75,10.5:68,11:60};
+  var L = sleepMap[sleep] !== undefined ? sleepMap[sleep] : 75;
+  var M = (mood/5)*100;
+  var studyScore = [0,20,40,55,65,75,85,92,100];
+  var studyIdx = Math.min(Math.floor(study*2), 8);
+  var checksEl = document.querySelector('input[name=checks]:checked');
+  var checks = checksEl ? parseInt(checksEl.value) : 5;
+  var F = Math.max(0, studyScore[studyIdx] + (focus-1)*5 - checks*2);
+  var A = acad*10;
+
+  return Math.round((S*0.25)+(L*0.20)+(M*0.20)+(F*0.20)+(A*0.15));
+}
+
+// ── SUBMIT ──
+function submitForm() {
+  var fsi = calcFSI();
+  document.getElementById('main-form').style.display = 'none';
+  var ss = document.getElementById('success-screen');
+  ss.classList.add('visible');
+
+  var color = fsi>=75?'var(--active)':fsi>=50?'var(--mixed)':'var(--passive)';
+  var verdict = fsi>=75?'Strong focus — great habits today':fsi>=50?'Moderate — some room to improve':'Low — passive screen time is affecting your wellbeing';
+
+  var el = document.getElementById('fsi-display');
+  el.textContent = fsi;
+  el.style.color = color;
+  document.getElementById('fsi-verdict').textContent = verdict;
+  document.getElementById('fsi-fill').style.width = fsi+'%';
+  document.getElementById('fsi-fill').style.background = color;
+}
+
+function resetForm() {
+  document.getElementById('success-screen').classList.remove('visible');
+  document.getElementById('main-form').style.display = 'block';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── INIT ──
+renderApps(socialApps, 'social-grid');
+renderApps(gameApps, 'games-grid');
+setCustomType('passive');
+</script>
+</body>
+</html>

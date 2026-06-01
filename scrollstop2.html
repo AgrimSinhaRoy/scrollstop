@@ -1,0 +1,1520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ScrollStop — Track Your Focus</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #04050d;
+  --surface: #0a0c1a;
+  --surface2: #111326;
+  --border: rgba(255,255,255,0.06);
+  --border-hover: rgba(108,99,255,0.4);
+  --accent: #6C63FF;
+  --accent2: #FF6B6B;
+  --accent3: #43E97B;
+  --accent4: #00D2FF;
+  --text: #EEEEFF;
+  --muted: rgba(220,220,255,0.42);
+  --passive: #FF6B6B;
+  --active: #43E97B;
+  --mixed: #FFB347;
+  --error: #FF4466;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden;}
+
+/* STARS */
+#star-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.5;}
+
+/* GRID */
+.grid-overlay{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(rgba(108,99,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(108,99,255,0.025) 1px,transparent 1px);
+  background-size:80px 80px;}
+
+/* ORBS */
+.orb{position:fixed;border-radius:50%;pointer-events:none;z-index:0;filter:blur(100px);}
+.orb1{width:700px;height:700px;background:radial-gradient(circle,rgba(108,99,255,0.2),transparent 70%);top:-200px;left:-200px;animation:od1 20s ease-in-out infinite alternate;}
+.orb2{width:500px;height:500px;background:radial-gradient(circle,rgba(255,107,107,0.16),transparent 70%);bottom:-100px;right:-100px;animation:od2 25s ease-in-out infinite alternate;}
+.orb3{width:400px;height:400px;background:radial-gradient(circle,rgba(0,210,255,0.12),transparent 70%);top:40%;left:60%;animation:od3 18s ease-in-out infinite alternate;}
+@keyframes od1{0%{transform:translate(0,0)}100%{transform:translate(60px,80px)}}
+@keyframes od2{0%{transform:translate(0,0)}100%{transform:translate(-50px,-60px)}}
+@keyframes od3{0%{transform:translate(0,0)}100%{transform:translate(-40px,50px)}}
+
+/* RIPPLE */
+.ripple{position:fixed;border-radius:50%;pointer-events:none;z-index:9999;
+  background:radial-gradient(circle,rgba(108,99,255,0.4),transparent 70%);
+  transform:scale(0);animation:ripOut 0.5s ease-out forwards;}
+@keyframes ripOut{0%{transform:scale(0);opacity:1}100%{transform:scale(4);opacity:0}}
+
+/* WRAPPER */
+.wrapper{position:relative;z-index:1;max-width:700px;margin:0 auto;padding:0 1.5rem 6rem;}
+
+/* ═══ HERO ═══ */
+.hero{text-align:center;padding:2rem 1.5rem;min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;animation:heroIn 1s cubic-bezier(0.16,1,0.3,1) both;transition:min-height 0.7s cubic-bezier(0.4,0,0.2,1),padding 0.7s ease;}
+.hero.compact{min-height:0;padding:3.5rem 0 2rem;}
+#start-btn{display:inline-flex;align-items:center;gap:10px;margin-top:2.5rem;padding:1rem 2.4rem;background:linear-gradient(135deg,var(--accent),var(--accent4));border:none;border-radius:100px;color:#fff;font-family:'Syne',sans-serif;font-size:17px;font-weight:700;cursor:pointer;letter-spacing:0.03em;box-shadow:0 8px 30px rgba(108,99,255,0.45);transition:transform 0.2s ease,box-shadow 0.2s ease,opacity 0.3s ease;}
+#start-btn:hover{transform:translateY(-3px);box-shadow:0 16px 45px rgba(108,99,255,0.6);}
+#start-btn:active{transform:scale(0.97);}
+.start-arrow{display:inline-block;transition:transform 0.2s ease;}
+#start-btn:hover .start-arrow{transform:translateX(5px);}
+#survey-body{opacity:0;transform:translateY(20px);transition:opacity 0.6s ease 0.15s,transform 0.6s ease 0.15s;pointer-events:none;}
+#survey-body.visible{opacity:1;transform:translateY(0);pointer-events:auto;}
+body.in-landing{overflow:hidden;}
+@keyframes heroIn{from{opacity:0;transform:translateY(-30px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── LOGO ── */
+.logo-wrap{position:relative;display:inline-block;cursor:pointer;margin-bottom:2rem;}
+.logo-wrap:hover .logo-glow{opacity:1;}
+
+/* Outer glow halo */
+.logo-glow{
+  position:absolute;inset:-20px;border-radius:50%;
+  background:radial-gradient(circle,rgba(108,99,255,0.25),transparent 70%);
+  opacity:0.6;transition:opacity 0.4s;pointer-events:none;
+  animation:haloBreath 3s ease-in-out infinite;
+}
+@keyframes haloBreath{
+  0%,100%{transform:scale(1);opacity:0.5}
+  50%{transform:scale(1.15);opacity:0.9}
+}
+
+/* The phone/scroll SVG mark */
+.logo-svg-wrap{
+  position:relative;width:100px;height:100px;
+  display:flex;align-items:center;justify-content:center;
+}
+
+/* Spinning rings */
+.logo-ring{position:absolute;border-radius:50%;border:1.5px solid transparent;}
+.lr1{inset:0;border-color:rgba(108,99,255,0.7) transparent transparent transparent;animation:spin 3.5s linear infinite;}
+.lr2{inset:10px;border-color:transparent rgba(0,210,255,0.6) transparent transparent;animation:spin 5s linear infinite reverse;}
+.lr3{inset:20px;border-color:rgba(67,233,123,0.5) transparent transparent transparent;animation:spin 8s linear infinite;}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
+/* Core circle */
+.logo-core-circle{
+  position:absolute;inset:28px;border-radius:50%;
+  background:linear-gradient(135deg,#1a1040,#0a2040);
+  border:2px solid rgba(108,99,255,0.5);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 0 1px rgba(108,99,255,0.2),0 0 30px rgba(108,99,255,0.5),0 0 60px rgba(108,99,255,0.2),inset 0 1px 0 rgba(255,255,255,0.15);
+  animation:corePulse 2.5s ease-in-out infinite;
+  overflow:hidden;
+}
+@keyframes corePulse{
+  0%,100%{box-shadow:0 0 0 1px rgba(108,99,255,0.2),0 0 25px rgba(108,99,255,0.5),0 0 50px rgba(108,99,255,0.2),inset 0 1px 0 rgba(255,255,255,0.1);}
+  50%{box-shadow:0 0 0 2px rgba(108,99,255,0.4),0 0 50px rgba(108,99,255,0.8),0 0 100px rgba(108,99,255,0.4),0 0 150px rgba(108,99,255,0.15),inset 0 1px 0 rgba(255,255,255,0.2);}
+}
+
+/* The phone + stop icon SVG */
+.logo-icon-svg{width:26px;height:26px;position:relative;z-index:1;}
+
+/* Scanline inside core */
+.logo-core-circle::after{
+  content:'';position:absolute;top:-100%;left:0;right:0;height:100%;
+  background:linear-gradient(transparent,rgba(108,99,255,0.15),transparent);
+  animation:scanline 3s ease-in-out infinite;
+}
+@keyframes scanline{0%{top:-100%}100%{top:200%}}
+
+/* Orbit dot */
+.logo-orbit-dot{
+  position:absolute;width:8px;height:8px;border-radius:50%;
+  background:var(--accent3);
+  box-shadow:0 0 12px var(--accent3);
+  top:50%;left:0;transform-origin:50px 0;
+  animation:orbitDot 4s linear infinite;
+}
+@keyframes orbitDot{
+  0%{transform:translateY(-50%) rotate(0deg) translateX(46px) rotate(0deg);}
+  100%{transform:translateY(-50%) rotate(360deg) translateX(46px) rotate(-360deg);}
+}
+.logo-orbit-dot2{
+  position:absolute;width:6px;height:6px;border-radius:50%;
+  background:var(--accent2);box-shadow:0 0 10px var(--accent2);
+  top:50%;left:0;transform-origin:50px 0;
+  animation:orbitDot2 6s linear infinite reverse;
+}
+@keyframes orbitDot2{
+  0%{transform:translateY(-50%) rotate(0deg) translateX(46px) rotate(0deg);}
+  100%{transform:translateY(-50%) rotate(360deg) translateX(46px) rotate(-360deg);}
+}
+
+/* bounce on click */
+.logo-bounce{animation:logoBounce 0.4s cubic-bezier(0.34,1.56,0.64,1) both;}
+@keyframes logoBounce{0%{transform:scale(1)}30%{transform:scale(1.3)}100%{transform:scale(1)}}
+
+/* WORDMARK */
+.logo-wordmark{
+  font-family:'Syne',sans-serif;font-size:44px;font-weight:800;
+  letter-spacing:-1.5px;line-height:1;
+  background:linear-gradient(135deg,#fff 0%,#8B83FF 30%,#00D2FF 60%,#43E97B 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  filter:drop-shadow(0 0 30px rgba(108,99,255,0.4));
+}
+.logo-tagline{font-size:11px;letter-spacing:0.3em;text-transform:uppercase;color:var(--muted);margin-top:5px;}
+.logo-badge{
+  display:inline-flex;align-items:center;gap:5px;margin-top:10px;
+  background:rgba(108,99,255,0.1);border:1px solid rgba(108,99,255,0.2);
+  border-radius:20px;padding:4px 14px;font-size:11px;color:rgba(180,175,255,0.8);
+}
+.badge-dot{width:6px;height:6px;border-radius:50%;background:var(--accent3);box-shadow:0 0 8px var(--accent3);animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+
+.hero-sub{font-size:14px;color:var(--muted);line-height:1.7;max-width:440px;margin:1.5rem auto 0;}
+.hero-stats{display:flex;justify-content:center;gap:2rem;margin-top:1.5rem;}
+.hstat{text-align:center;}
+.hstat-num{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;
+  background:linear-gradient(135deg,var(--accent),var(--accent4));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hstat-label{font-size:11px;color:var(--muted);margin-top:2px;}
+.hstat-div{width:1px;background:var(--border);}
+
+/* PROGRESS */
+.progress-wrap{margin-bottom:2rem;animation:fadeUp 0.8s ease 0.3s both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.progress-track{height:3px;background:var(--border);border-radius:2px;position:relative;}
+.progress-fill{
+  height:100%;border-radius:2px;
+  background:linear-gradient(90deg,var(--accent),var(--accent4),var(--accent3));
+  transition:width 0.5s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow:0 0 10px var(--accent);position:relative;
+}
+.progress-fill::after{content:'';position:absolute;right:-4px;top:50%;transform:translateY(-50%);
+  width:10px;height:10px;border-radius:50%;background:white;
+  box-shadow:0 0 10px var(--accent),0 0 20px var(--accent);}
+.progress-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:8px;}
+
+/* SECTION CARDS */
+.section-card{
+  background:linear-gradient(135deg,var(--surface) 0%,rgba(15,17,32,0.95) 100%);
+  border:1px solid var(--border);border-radius:24px;
+  padding:2rem;margin-bottom:12px;
+  animation:cardIn 0.6s cubic-bezier(0.16,1,0.3,1) both;
+  transition:border-color 0.3s,transform 0.2s,box-shadow 0.3s;
+  position:relative;overflow:visible;
+}
+.section-card::before{content:'';position:absolute;inset:0;border-radius:24px;
+  background:linear-gradient(135deg,rgba(108,99,255,0.03),transparent 60%);pointer-events:none;}
+.section-card:hover{border-color:var(--border-hover);transform:translateY(-2px);
+  box-shadow:0 20px 60px rgba(0,0,0,0.4),0 0 30px rgba(108,99,255,0.06);}
+.section-card.error-card{border-color:var(--error)!important;animation:shake 0.5s ease both;
+  box-shadow:0 0 30px rgba(255,68,102,0.3)!important;}
+@keyframes shake{0%,100%{transform:translateX(0)}15%{transform:translateX(-8px)}30%{transform:translateX(8px)}45%{transform:translateX(-6px)}60%{transform:translateX(6px)}75%{transform:translateX(-3px)}90%{transform:translateX(3px)}}
+@keyframes cardIn{from{opacity:0;transform:translateY(28px) scale(0.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.section-card:nth-child(1){animation-delay:.05s}.section-card:nth-child(2){animation-delay:.1s}
+.section-card:nth-child(3){animation-delay:.15s}.section-card:nth-child(4){animation-delay:.2s}
+.section-card:nth-child(5){animation-delay:.25s}.section-card:nth-child(6){animation-delay:.3s}
+
+.section-header{display:flex;align-items:center;gap:14px;margin-bottom:1.5rem;}
+.section-icon{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;box-shadow:0 4px 16px rgba(0,0,0,0.3);}
+.section-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;letter-spacing:-0.3px;}
+.section-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+.section-num{margin-left:auto;font-family:'Syne',sans-serif;font-size:11px;font-weight:600;color:var(--muted);
+  background:var(--surface2);border-radius:20px;padding:3px 10px;border:1px solid var(--border);}
+
+/* INPUTS */
+.input-group{margin-bottom:1.5rem;}
+.input-group:last-child{margin-bottom:0;}
+.input-group.field-error .input-label{color:var(--error);}
+.input-group.field-error .pill-label,.input-group.field-error .mood-face{border-color:rgba(255,68,102,0.4);}
+.input-label{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.input-label-accent{font-size:11px;font-weight:500;padding:2px 8px;border-radius:20px;text-transform:none;letter-spacing:0;}
+
+/* sliders */
+.slider-row{display:flex;align-items:center;gap:16px;}
+.slider-row input[type=range]{flex:1;-webkit-appearance:none;height:4px;background:var(--surface2);border-radius:2px;outline:none;cursor:pointer;}
+.slider-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:white;
+  box-shadow:0 0 0 3px var(--accent),0 0 15px var(--accent);cursor:grab;transition:transform 0.15s,box-shadow 0.15s;}
+.slider-row input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.25);box-shadow:0 0 0 4px var(--accent),0 0 25px var(--accent),0 0 45px var(--accent);}
+.slider-row input[type=range]:active::-webkit-slider-thumb{cursor:grabbing;transform:scale(1.3);}
+.slider-val{font-family:'Syne',sans-serif;font-size:19px;font-weight:700;min-width:58px;text-align:right;}
+.slider-val small{font-size:12px;color:var(--muted);font-weight:400;font-family:'DM Sans',sans-serif;}
+
+/* pills */
+.pill-group{display:flex;flex-wrap:wrap;gap:8px;}
+.pill-option{display:none;}
+.pill-label{padding:9px 18px;border-radius:40px;border:1px solid var(--border);font-size:13px;color:var(--muted);cursor:pointer;transition:all 0.2s;user-select:none;position:relative;overflow:hidden;}
+.pill-label:hover{border-color:rgba(108,99,255,0.4);color:var(--text);}
+.pill-option:checked + .pill-label{background:linear-gradient(135deg,var(--accent),var(--accent4));border-color:transparent;color:white;box-shadow:0 0 20px rgba(108,99,255,0.45),0 4px 16px rgba(108,99,255,0.25);}
+
+/* checkboxes (multi-select pills) */
+.check-option{display:none;}
+.check-label{padding:9px 18px;border-radius:40px;border:1px solid var(--border);font-size:13px;color:var(--muted);cursor:pointer;transition:all 0.2s;user-select:none;}
+.check-label:hover{border-color:rgba(108,99,255,0.4);color:var(--text);}
+.check-option:checked + .check-label{background:linear-gradient(135deg,var(--accent),var(--accent4));border-color:transparent;color:white;box-shadow:0 0 20px rgba(108,99,255,0.45);}
+
+/* text input */
+.text-input{width:100%;height:48px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:0 16px;outline:none;transition:border-color 0.2s,box-shadow 0.2s;}
+.text-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(108,99,255,0.15);}
+.text-input::placeholder{color:var(--muted);}
+
+/* mood */
+.mood-row{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;overflow:visible;padding:8px 0;}
+.mood-opt{display:none;}
+.mood-face{text-align:center;padding:12px 2px 8px;border:1px solid var(--border);border-radius:16px;cursor:pointer;transition:all 0.25s;font-size:22px;will-change:transform;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:0;}
+.mood-face:hover{border-color:rgba(108,99,255,0.5);transform:scale(1.06) translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.4);}
+.mood-opt:checked + .mood-face{border-color:var(--accent);background:rgba(108,99,255,0.15);transform:scale(1.08) translateY(-3px);box-shadow:0 0 20px rgba(108,99,255,0.4);}
+.mood-val{font-size:9px;color:var(--muted);margin-top:4px;letter-spacing:0;}
+
+/* APP TILES */
+.cat-label{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin:1.25rem 0 0.75rem;display:flex;align-items:center;gap:8px;}
+.cat-label::after{content:'';flex:1;height:1px;background:var(--border);}
+.app-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;}
+.app-tile{background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:12px;cursor:pointer;transition:all 0.22s;user-select:none;position:relative;}
+.app-tile:hover{border-color:rgba(108,99,255,0.4);transform:translateY(-2px) scale(1.02);box-shadow:0 8px 24px rgba(0,0,0,0.5);}
+.app-tile.has-selection{border-color:rgba(108,99,255,0.5);background:rgba(108,99,255,0.08);}
+.app-tile-name{font-size:12px;font-weight:500;color:var(--text);margin-bottom:6px;}
+.app-tile-expand{font-size:10px;color:var(--muted);margin-bottom:6px;cursor:pointer;}
+.app-sub-checks{display:none;gap:4px;flex-wrap:wrap;margin-top:6px;}
+.app-sub-checks.visible{display:flex;}
+.sub-chk-opt{display:none;}
+.sub-chk-label{font-size:10px;padding:3px 8px;border-radius:20px;border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all 0.15s;}
+.sub-chk-label:hover{border-color:rgba(108,99,255,0.4);color:var(--text);}
+.sub-chk-opt:checked + .sub-chk-label{background:rgba(108,99,255,0.25);border-color:var(--accent);color:white;}
+.sub-chk-opt.passive:checked + .sub-chk-label{background:rgba(255,107,107,0.2);border-color:var(--passive);color:var(--passive);}
+.sub-chk-opt.active:checked + .sub-chk-label{background:rgba(67,233,123,0.2);border-color:var(--active);color:var(--active);}
+.sub-chk-opt.mixed:checked + .sub-chk-label{background:rgba(255,179,71,0.2);border-color:var(--mixed);color:var(--mixed);}
+.app-hrs-row{display:flex;align-items:center;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.06);overflow:hidden;}
+.app-hrs-label{font-size:10px;color:var(--muted);flex-shrink:0;}
+.app-hrs-row input[type=range]{flex:1;width:0;min-width:0;-webkit-appearance:none;height:4px;background:rgba(108,99,255,0.35);border-radius:2px;outline:none;cursor:pointer;}
+.app-hrs-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--accent);cursor:pointer;box-shadow:0 0 8px var(--accent);}
+.app-hrs-val{font-size:11px;color:var(--accent);min-width:30px;font-weight:700;}
+.app-selected-count{font-size:9px;position:absolute;top:8px;right:8px;background:var(--accent);color:white;border-radius:20px;padding:1px 6px;display:none;}
+.app-selected-count.visible{display:block;}
+
+/* add custom */
+.add-row{display:flex;gap:8px;margin-top:1rem;}
+.add-row .text-input{flex:1;}
+.add-btn{padding:0 20px;height:48px;border-radius:14px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-size:14px;cursor:pointer;transition:all 0.2s;white-space:nowrap;font-family:'Syne',sans-serif;font-weight:600;}
+.add-btn:hover{background:var(--accent);color:white;box-shadow:0 0 20px rgba(108,99,255,0.4);}
+.add-type-row{display:flex;gap:6px;margin-top:8px;}
+.add-type-btn{padding:6px 16px;border-radius:20px;font-size:12px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;transition:all 0.2s;}
+.add-type-btn.sel-passive{background:rgba(255,107,107,0.2);border-color:var(--passive);color:var(--passive);}
+.add-type-btn.sel-active{background:rgba(67,233,123,0.2);border-color:var(--active);color:var(--active);}
+.add-type-btn.sel-mixed{background:rgba(255,179,71,0.2);border-color:var(--mixed);color:var(--mixed);}
+
+/* SUMMARY */
+.summary-strip{background:linear-gradient(135deg,var(--surface),var(--surface2));border:1px solid var(--border);border-radius:20px;padding:1.25rem 1.5rem;display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:12px;position:relative;overflow:hidden;}
+.summary-strip::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);}
+.sum-col{text-align:center;}
+.sum-val{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;line-height:1;}
+.sum-label{font-size:11px;color:var(--muted);margin-top:3px;letter-spacing:0.04em;}
+
+/* SUBMIT */
+.submit-btn{width:100%;padding:18px;border-radius:18px;background:linear-gradient(135deg,#6C63FF 0%,#5a4fcf 40%,#00D2FF 100%);border:none;color:white;font-family:'Syne',sans-serif;font-size:16px;font-weight:700;cursor:pointer;letter-spacing:0.2px;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 8px 40px rgba(108,99,255,0.5);position:relative;overflow:hidden;}
+.submit-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,0.1),transparent);border-radius:18px;}
+.submit-btn::after{content:'';position:absolute;top:-50%;left:-60%;width:40%;height:200%;background:rgba(255,255,255,0.12);transform:skewX(-20deg);transition:left 0.5s ease;}
+.submit-btn:hover{transform:translateY(-3px) scale(1.01);box-shadow:0 16px 60px rgba(108,99,255,0.7);}
+.submit-btn:hover::after{left:120%;}
+.submit-btn:active{transform:translateY(-1px);}
+
+/* VALIDATION TOAST */
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(100px);background:var(--error);color:white;padding:12px 24px;border-radius:40px;font-size:13px;font-weight:500;z-index:9999;transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1);white-space:nowrap;box-shadow:0 8px 30px rgba(255,68,102,0.4);}
+.toast.show{transform:translateX(-50%) translateY(0);}
+/* MISMATCH MODAL */
+.mismatch-overlay{position:fixed;inset:0;background:rgba(10,10,20,0.8);backdrop-filter:blur(10px);z-index:10000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.3s ease;}
+.mismatch-overlay.show{opacity:1;pointer-events:auto;}
+.mismatch-card{background:var(--surface);border:1px solid rgba(108,99,255,0.45);border-radius:24px;padding:2.5rem 2rem;max-width:380px;width:90%;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,0.6);transform:scale(0.88) translateY(24px);transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1);}
+.mismatch-overlay.show .mismatch-card{transform:scale(1) translateY(0);}
+.mismatch-icon{font-size:42px;margin-bottom:1rem;}
+.mismatch-title{font-family:'Syne',sans-serif;font-size:19px;font-weight:800;margin-bottom:0.6rem;color:#fff;}
+.mismatch-msg{font-size:13.5px;color:var(--muted);line-height:1.65;margin-bottom:1.5rem;}
+.mismatch-nums{display:flex;gap:0.875rem;justify-content:center;margin-bottom:1.75rem;}
+.mismatch-num{flex:1;background:var(--surface2);border-radius:14px;padding:1rem 0.5rem;}
+.mismatch-num .mn-val{display:block;font-family:'Syne',sans-serif;font-size:24px;font-weight:800;margin-bottom:4px;}
+.mismatch-num .mn-label{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;line-height:1.4;}
+.mn-declared .mn-val{color:var(--accent4);}
+.mn-apps .mn-val{color:var(--passive);}
+.mismatch-btns{display:flex;flex-direction:column;gap:0.75rem;}
+.btn-mm-review{background:linear-gradient(135deg,var(--accent),var(--accent4));border:none;border-radius:100px;padding:0.9rem 1.5rem;color:#fff;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:opacity 0.2s;}
+.btn-mm-review:hover{opacity:0.88;}
+.btn-mm-continue{background:transparent;border:1px solid var(--border);border-radius:100px;padding:0.85rem 1.5rem;color:var(--muted);font-size:13.5px;cursor:pointer;transition:color 0.2s;}
+.btn-mm-continue:hover{color:#fff;}
+/* SHARE BUTTON */
+#share-btn{position:fixed;bottom:2rem;right:2rem;z-index:9000;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent4));border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 24px rgba(108,99,255,0.5);transition:transform 0.22s ease,box-shadow 0.22s ease,width 0.3s cubic-bezier(0.34,1.56,0.64,1);overflow:hidden;white-space:nowrap;}
+#share-btn:hover{transform:translateY(-3px);box-shadow:0 14px 42px rgba(108,99,255,0.65);width:130px;border-radius:100px;}
+#share-btn:active{transform:scale(0.95);}
+#share-btn svg{width:20px;height:20px;flex-shrink:0;}
+.share-btn-label{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;max-width:0;overflow:hidden;transition:max-width 0.3s ease,margin 0.3s ease;margin-left:0;}
+#share-btn:hover .share-btn-label{max-width:80px;margin-left:8px;}
+#share-copied{position:fixed;bottom:5.75rem;right:2rem;z-index:9001;background:var(--active);color:#0a0a14;padding:8px 18px;border-radius:30px;font-size:13px;font-weight:700;opacity:0;transform:translateY(10px);transition:opacity 0.35s ease,transform 0.35s cubic-bezier(0.34,1.56,0.64,1);pointer-events:none;white-space:nowrap;box-shadow:0 6px 20px rgba(67,233,123,0.35);}
+#share-copied.show{opacity:1;transform:translateY(0);}
+
+/* SUCCESS */
+.success-screen{display:none;text-align:center;padding:5rem 2rem;}
+.success-screen.visible{display:block;animation:heroIn 0.8s cubic-bezier(0.16,1,0.3,1) both;}
+.success-orb{position:relative;width:120px;height:120px;margin:0 auto 2.5rem;}
+.success-ring{position:absolute;inset:0;border-radius:50%;border:2px solid transparent;}
+.sr1{border-color:rgba(67,233,123,0.5) transparent;animation:spin 3s linear infinite;}
+.sr2{inset:10px;border-color:transparent rgba(0,210,255,0.4);animation:spin 4s linear infinite reverse;}
+.success-core{position:absolute;inset:18px;border-radius:50%;background:linear-gradient(135deg,rgba(67,233,123,0.3),rgba(0,210,255,0.3));border:2px solid var(--active);display:flex;align-items:center;justify-content:center;font-size:36px;box-shadow:0 0 40px rgba(67,233,123,0.5);animation:corePulse 2s ease-in-out infinite;}
+.success-title{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;letter-spacing:-0.5px;margin-bottom:8px;}
+.success-sub{font-size:14px;color:var(--muted);line-height:1.6;max-width:380px;margin:0 auto;}
+.fsi-card{background:linear-gradient(135deg,var(--surface),var(--surface2));border:1px solid var(--border);border-radius:24px;padding:2.5rem 2rem;margin-top:2rem;position:relative;overflow:hidden;}
+.fsi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--active),transparent);}
+.fsi-bignum{font-family:'Syne',sans-serif;font-size:88px;font-weight:800;line-height:1;letter-spacing:-3px;}
+.fsi-100{font-size:32px;color:var(--muted);vertical-align:super;letter-spacing:-1px;}
+.fsi-verdict{font-size:14px;color:var(--muted);margin-top:6px;}
+.fsi-bar-track{height:6px;background:var(--border);border-radius:3px;margin-top:1.5rem;}
+.fsi-bar-fill{height:100%;border-radius:3px;transition:width 1.5s cubic-bezier(0.34,1.56,0.64,1);}
+
+/* ═══ WIZARD ═══ */
+.section-card{display:none;}
+.section-card.wizard-active{display:block;position:relative;z-index:10;}
+.step-dots{display:flex;justify-content:center;gap:7px;margin-bottom:0.75rem;}
+.sdot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1);}
+.sdot.active{background:var(--accent);box-shadow:0 0 10px rgba(108,99,255,0.6);width:26px;border-radius:4px;}
+.sdot.done{background:var(--accent3);box-shadow:0 0 6px rgba(67,233,123,0.35);}
+.step-label{text-align:center;font-size:11px;color:var(--muted);letter-spacing:0.07em;text-transform:uppercase;margin-bottom:0.4rem;}
+.wizard-nav{display:flex;gap:10px;margin-top:12px;}
+.btn-back{flex:none;padding:0 22px;height:56px;border-radius:18px;border:none;background:linear-gradient(135deg,#FF416C,#FF4B2B);color:#fff;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:transform 0.2s ease,box-shadow 0.2s ease,opacity 0.2s;display:none;justify-content:center;align-items:center;box-shadow:0 4px 18px rgba(255,65,108,0.4);letter-spacing:0.01em;}
+.btn-back:hover{transform:translateY(-2px);box-shadow:0 10px 32px rgba(255,65,108,0.6);opacity:0.92;}
+.btn-back:active{transform:scale(0.96);}
+.btn-next{flex:1;padding:0 24px;height:56px;border-radius:18px;background:linear-gradient(135deg,#6C63FF 0%,#5a4fcf 40%,#00D2FF 100%);border:none;color:white;font-family:'Syne',sans-serif;font-size:16px;font-weight:700;cursor:pointer;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);box-shadow:0 6px 30px rgba(108,99,255,0.45);position:relative;overflow:hidden;}
+.btn-next::after{content:'';position:absolute;top:-50%;left:-60%;width:40%;height:200%;background:rgba(255,255,255,0.12);transform:skewX(-20deg);transition:left 0.5s ease;}
+.btn-next:hover{transform:translateY(-2px);box-shadow:0 12px 50px rgba(108,99,255,0.65);}
+.btn-next:hover::after{left:120%;}
+
+/* ═══ COUNTRY DROPDOWN ═══ */
+.country-wrap{position:relative;}
+.cs-dropdown{display:none;position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:200;background:var(--surface);border:1px solid rgba(108,99,255,0.3);border-radius:14px;max-height:220px;overflow-y:auto;box-shadow:0 16px 50px rgba(0,0,0,0.7);}
+.cs-dropdown.open{display:block;animation:fadeUp 0.2s ease both;}
+.cs-option{padding:10px 16px;font-size:13px;color:var(--muted);cursor:pointer;transition:background 0.12s,color 0.12s;border-radius:8px;margin:2px 4px;}
+.cs-option:hover{background:rgba(108,99,255,0.15);color:var(--text);}
+.cs-dropdown::-webkit-scrollbar{width:4px;}
+.cs-dropdown::-webkit-scrollbar-track{background:transparent;}
+.cs-dropdown::-webkit-scrollbar-thumb{background:rgba(108,99,255,0.3);border-radius:2px;}
+
+/* ═══ FORMULA & INSIGHTS ═══ */
+.formula-card,.insights-card{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:1.5rem;margin-top:1.25rem;text-align:left;}
+.formula-card-title,.insights-card-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.09em;margin-bottom:1rem;display:flex;align-items:center;gap:8px;}
+.formula-card-title::after,.insights-card-title::after{content:'';flex:1;height:1px;background:var(--border);}
+.frow{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04);}
+.frow:last-child{border-bottom:none;}
+.frow-left{font-size:12px;color:var(--muted);line-height:1.4;}
+.frow-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.frow-score{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;}
+.frow-weight{font-size:10px;color:var(--muted);background:rgba(255,255,255,0.05);border-radius:8px;padding:2px 8px;border:1px solid var(--border);}
+.iitem{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.04);}
+.iitem:last-child{border-bottom:none;}
+.iitem-icon{font-size:20px;flex-shrink:0;line-height:1.3;margin-top:1px;}
+.iitem-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px;}
+.iitem-text{font-size:12px;color:var(--muted);line-height:1.7;}
+#confetti-canvas{position:fixed;inset:0;z-index:9998;pointer-events:none;display:none;}
+/* ═══ COST CARD ═══ */
+.cost-card{background:linear-gradient(135deg,rgba(255,107,107,0.07),rgba(255,179,71,0.04));border:1px solid rgba(255,107,107,0.22);border-radius:20px;padding:1.5rem;margin-top:1.25rem;text-align:left;position:relative;overflow:hidden;}
+.cost-card-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--passive);text-transform:uppercase;letter-spacing:0.09em;margin-bottom:0.75rem;display:flex;align-items:center;gap:8px;}
+.cost-card-title::after{content:'';flex:1;height:1px;background:rgba(255,107,107,0.2);}
+.cost-bignum{font-family:'Syne',sans-serif;font-size:48px;font-weight:900;color:var(--passive);line-height:1;margin:0.4rem 0 0.25rem;}
+.cost-sub{font-size:12px;color:var(--muted);margin-bottom:1rem;}
+.crow{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,107,107,0.1);}
+.crow:last-child{border-bottom:none;}
+.crow-icon{font-size:17px;flex-shrink:0;margin-top:1px;}
+.crow-body{flex:1;}
+.crow-label{font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px;}
+.crow-detail{font-size:11px;color:var(--muted);line-height:1.55;}
+.crow-cost{font-family:'Syne',sans-serif;font-size:14px;font-weight:800;color:var(--passive);flex-shrink:0;padding-left:6px;}
+.cost-reality{margin-top:0.9rem;padding-top:0.7rem;border-top:1px solid rgba(255,107,107,0.12);font-size:11px;color:var(--muted);display:flex;flex-wrap:wrap;align-items:center;gap:6px;line-height:2;}
+.reality-pill{background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:20px;padding:3px 10px;font-size:11px;color:var(--text);font-weight:600;}
+.money-float{position:absolute;font-size:20px;pointer-events:none;z-index:5;bottom:16px;animation:moneyFloat linear forwards;}
+@keyframes moneyFloat{0%{transform:translateY(0) rotate(0deg) scale(1);opacity:1;}100%{transform:translateY(-140px) rotate(30deg) scale(0.5);opacity:0;}}
+@keyframes slideUp{from{transform:translateY(14px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.iitem-slide{animation:slideUp 0.45s ease both;}
+.iitem-shake{animation:slideUp 0.45s ease both,shake 0.55s ease 0.5s both;}
+</style>
+</head>
+<body class="in-landing">
+
+<canvas id="star-canvas"></canvas>
+<div class="grid-overlay"></div>
+<div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div>
+<div class="toast" id="toast">Please fill all required fields</div>
+
+<!-- MISMATCH MODAL -->
+<div class="mismatch-overlay" id="mismatch-overlay">
+  <div class="mismatch-card">
+    <div class="mismatch-icon">🤔</div>
+    <div class="mismatch-title">Your hours don't quite add up</div>
+    <div class="mismatch-msg">You reported <strong id="mm-declared-inline">0h</strong> of total screen time, but the apps you've selected only add up to <strong id="mm-apps-inline">0h</strong>. Want to go back and adjust?</div>
+    <div class="mismatch-nums">
+      <div class="mismatch-num mn-declared">
+        <span class="mn-val" id="mm-declared">0h</span>
+        <span class="mn-label">Screen time<br>you reported</span>
+      </div>
+      <div class="mismatch-num mn-apps">
+        <span class="mn-val" id="mm-apps">0h</span>
+        <span class="mn-label">Total from<br>your apps</span>
+      </div>
+    </div>
+    <div class="mismatch-btns">
+      <button class="btn-mm-review" onclick="closeMismatch(false)">← Review my apps</button>
+      <button class="btn-mm-continue" onclick="closeMismatch(true)">Looks close enough, continue →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHARE BUTTON -->
+<button id="share-btn" onclick="shareApp()" title="Share ScrollStop">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+  <span class="share-btn-label">Share</span>
+</button>
+<div id="share-copied">✓ Link copied!</div>
+
+<div class="wrapper">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="logo-wrap" onclick="handleLogoClick()" id="logo-wrap">
+      <div class="logo-glow"></div>
+      <div class="logo-svg-wrap">
+        <div class="logo-ring lr1"></div>
+        <div class="logo-ring lr2"></div>
+        <div class="logo-ring lr3"></div>
+        <div class="logo-orbit-dot"></div>
+        <div class="logo-orbit-dot2"></div>
+        <div class="logo-core-circle" id="logo-core">
+          <!-- Phone with stop/scroll icon -->
+          <svg class="logo-icon-svg" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Phone body -->
+            <rect x="7" y="2" width="14" height="22" rx="3" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" fill="none"/>
+            <!-- Screen -->
+            <rect x="9" y="5" width="10" height="14" rx="1.5" fill="rgba(108,99,255,0.3)" stroke="rgba(108,99,255,0.6)" stroke-width="0.8"/>
+            <!-- Stop hand / palm raised -->
+            <line x1="12" y1="8" x2="12" y2="13" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+            <line x1="14" y1="7" x2="14" y2="13" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+            <line x1="16" y1="8" x2="16" y2="13" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+            <path d="M11.5 13 Q11.5 15 14 15 Q16.5 15 16.5 13" stroke="white" stroke-width="1.4" stroke-linecap="round" fill="none"/>
+            <!-- Stop indicator line across screen top -->
+            <line x1="9.5" y1="5.8" x2="18.5" y2="5.8" stroke="var(--accent2)" stroke-width="1" stroke-linecap="round"/>
+            <!-- Home button dot -->
+            <circle cx="14" cy="22.5" r="1" fill="rgba(255,255,255,0.4)"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:0.5rem;">
+      <div class="logo-wordmark">ScrollStop</div>
+      <div class="logo-tagline">Focus Intelligence Platform</div>
+
+    </div>
+
+    <div class="hero-sub">Track your screen time. Understand its real impact on your mind, sleep, and focus.</div>
+    <div class="hero-stats">
+      <div class="hstat"><div class="hstat-num">FSI</div><div class="hstat-label">Focus Score</div></div>
+      <div class="hstat-div"></div>
+      <div class="hstat"><div class="hstat-num">5 min</div><div class="hstat-label">To complete</div></div>
+      <div class="hstat-div"></div>
+      <div class="hstat"><div class="hstat-num">100%</div><div class="hstat-label">Anonymous</div></div>
+    </div>
+    <button id="start-btn" onclick="startSurvey()">Get My Focus Score <span class="start-arrow">→</span></button>
+  </div>
+
+  <div id="survey-body">
+  <!-- STEP INDICATOR -->
+  <div class="step-dots">
+    <div class="sdot active" id="dot-0"></div>
+    <div class="sdot" id="dot-1"></div>
+    <div class="sdot" id="dot-2"></div>
+    <div class="sdot" id="dot-3"></div>
+    <div class="sdot" id="dot-4"></div>
+    <div class="sdot" id="dot-5"></div>
+  </div>
+  <div class="step-label" id="step-label">Step 1 of 6 — About You</div>
+
+  <!-- PROGRESS -->
+  <div class="progress-wrap">
+    <div class="progress-track"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+    <div class="progress-meta"><span id="prog-section">About You</span><span id="prog-text">Step 1 / 6</span></div>
+  </div>
+
+  <div id="main-form">
+
+    <!-- S1 -->
+    <div class="section-card" id="card-s1">
+      <div class="section-header">
+        <div class="section-icon" style="background:linear-gradient(135deg,rgba(108,99,255,0.3),rgba(0,210,255,0.2));">👤</div>
+        <div><div class="section-title">About You</div><div class="section-sub">Anonymous — no name needed</div></div>
+        <div class="section-num">01</div>
+      </div>
+      <div class="input-group" id="grp-age">
+        <label class="input-label">Age</label>
+        <div class="pill-group">
+          <input type="radio" name="age" id="a13" value="13" class="pill-option" onchange="updateProgress();playClick();clearErr('grp-age','card-s1')"><label for="a13" class="pill-label">13</label>
+          <input type="radio" name="age" id="a14" value="14" class="pill-option" onchange="updateProgress();playClick();clearErr('grp-age','card-s1')"><label for="a14" class="pill-label">14</label>
+          <input type="radio" name="age" id="a15" value="15" class="pill-option" onchange="updateProgress();playClick();clearErr('grp-age','card-s1')"><label for="a15" class="pill-label">15</label>
+          <input type="radio" name="age" id="a16" value="16" class="pill-option" onchange="updateProgress();playClick();clearErr('grp-age','card-s1')"><label for="a16" class="pill-label">16</label>
+          <input type="radio" name="age" id="a17" value="17" class="pill-option" onchange="updateProgress();playClick();clearErr('grp-age','card-s1')"><label for="a17" class="pill-label">17</label>
+          <input type="radio" name="age" id="a18" value="18" class="pill-option" onchange="updateProgress();playClick();clearErr('grp-age','card-s1')"><label for="a18" class="pill-label">18</label>
+        </div>
+      </div>
+      <div class="input-group" id="grp-gender">
+        <label class="input-label">Gender</label>
+        <div class="pill-group">
+          <input type="radio" name="gender" id="gm" value="male" class="pill-option" onchange="updateProgress();playClick();clearErr('grp-gender','card-s1')"><label for="gm" class="pill-label">Male</label>
+          <input type="radio" name="gender" id="gf" value="female" class="pill-option" onchange="updateProgress();playClick();clearErr('grp-gender','card-s1')"><label for="gf" class="pill-label">Female</label>
+          <input type="radio" name="gender" id="gnb" value="nb" class="pill-option" onchange="updateProgress();playClick();clearErr('grp-gender','card-s1')"><label for="gnb" class="pill-label">Non-binary</label>
+          <input type="radio" name="gender" id="gns" value="ns" class="pill-option" onchange="updateProgress();playClick();clearErr('grp-gender','card-s1')"><label for="gns" class="pill-label">Prefer not to say</label>
+        </div>
+      </div>
+      <div class="input-group" id="grp-country">
+        <label class="input-label">Country</label>
+        <div class="country-wrap">
+          <input type="text" class="text-input" id="country-search" placeholder="Type to search country..." autocomplete="off"
+            oninput="filterCountries();clearErr('grp-country','card-s1')"
+            onfocus="openCountryDrop()" onblur="closeCountryDrop()">
+          <div class="cs-dropdown" id="country-drop"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- S2 -->
+    <div class="section-card" id="card-s2">
+      <div class="section-header">
+        <div class="section-icon" style="background:linear-gradient(135deg,rgba(255,107,107,0.3),rgba(255,179,71,0.2));">📱</div>
+        <div><div class="section-title">Screen Time Habits</div><div class="section-sub">Typical daily usage</div></div>
+        <div class="section-num">02</div>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Passive screen time <span class="input-label-accent" style="background:rgba(255,107,107,0.15);color:var(--passive);">scrolling · reels · entertainment</span></label>
+        <div class="slider-row">
+          <input type="range" min="0" max="8" step="0.5" value="0" id="passive-sl" oninput="sl('passive',this.value);updateSummary();">
+          <div class="slider-val" style="color:var(--passive)"><span id="passive-v">0</span><small> hrs</small></div>
+        </div>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Active screen time <span class="input-label-accent" style="background:rgba(67,233,123,0.15);color:var(--active);">coding · learning · creating</span></label>
+        <div class="slider-row">
+          <input type="range" min="0" max="6" step="0.5" value="0" id="active-sl" oninput="sl('active',this.value);updateSummary();">
+          <div class="slider-val" style="color:var(--active)"><span id="active-v">0</span><small> hrs</small></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- S3: Apps — multi-select with sub-activities -->
+    <div class="section-card" id="card-s3">
+      <div class="section-header">
+        <div class="section-icon" style="background:linear-gradient(135deg,rgba(67,233,123,0.3),rgba(0,210,255,0.2));">🎮</div>
+        <div><div class="section-title">Apps You Use</div><div class="section-sub">Select apps · expand to pick what you do · select multiple activities</div></div>
+        <div class="section-num">03</div>
+      </div>
+      <div class="cat-label">Social Media</div>
+      <div class="app-grid" id="social-grid"></div>
+      <div class="cat-label" style="margin-top:1.5rem;">Games</div>
+      <div class="app-grid" id="games-grid"></div>
+      <div class="cat-label" style="margin-top:1.5rem;">Add unlisted app</div>
+      <div class="add-row">
+        <input type="text" class="text-input" id="custom-name" placeholder="App name...">
+        <button class="add-btn" onclick="addCustomApp();playClick()">+ Add</button>
+      </div>
+      <div class="add-type-row">
+        <button class="add-type-btn sel-passive" id="ct-passive" onclick="setCustomType('passive');playClick()">Passive</button>
+        <button class="add-type-btn" id="ct-active" onclick="setCustomType('active');playClick()">Active</button>
+        <button class="add-type-btn" id="ct-mixed" onclick="setCustomType('mixed');playClick()">Mixed</button>
+      </div>
+      <div class="app-grid" id="custom-grid" style="margin-top:10px;"></div>
+    </div>
+
+    <!-- S4: Sleep -->
+    <div class="section-card" id="card-s4">
+      <div class="section-header">
+        <div class="section-icon" style="background:linear-gradient(135deg,rgba(108,99,255,0.3),rgba(180,120,255,0.2));">🌙</div>
+        <div><div class="section-title">Sleep</div><div class="section-sub">Last night's rest</div></div>
+        <div class="section-num">04</div>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Hours slept</label>
+        <div class="slider-row" style="align-items:center;">
+          <input type="range" min="4" max="11" step="0.5" value="7" id="sleep-sl" style="max-width:calc(100% - 80px);" oninput="sl('sleep',this.value);updateProgress();updateSummary();">
+          <div class="slider-val" style="color:var(--accent4);min-width:72px;"><span id="sleep-v">7</span><small> hrs</small></div>
+        </div>
+      </div>
+      <div class="input-group" id="grp-squal">
+        <label class="input-label">Sleep quality</label>
+        <div class="pill-group">
+          <input type="radio" name="squal" id="sq1" value="1" class="pill-option" onchange="updateProgress();playClick();clearErr('grp-squal','card-s4')"><label for="sq1" class="pill-label">😴 Very poor</label>
+          <input type="radio" name="squal" id="sq2" value="2" class="pill-option" onchange="updateProgress();playClick();clearErr('grp-squal','card-s4')"><label for="sq2" class="pill-label">😐 Poor</label>
+          <input type="radio" name="squal" id="sq3" value="3" class="pill-option" onchange="updateProgress();playClick();clearErr('grp-squal','card-s4')"><label for="sq3" class="pill-label">🙂 OK</label>
+          <input type="radio" name="squal" id="sq4" value="4" class="pill-option" onchange="updateProgress();playClick();clearErr('grp-squal','card-s4')"><label for="sq4" class="pill-label">😊 Good</label>
+          <input type="radio" name="squal" id="sq5" value="5" class="pill-option" onchange="updateProgress();playClick();clearErr('grp-squal','card-s4')"><label for="sq5" class="pill-label">🌟 Excellent</label>
+        </div>
+      </div>
+      <div class="input-group" id="grp-bsleep">
+        <label class="input-label">Screens before sleep?</label>
+        <div class="pill-group">
+          <input type="radio" name="bsleep" id="bs1" value="always" class="pill-option" onchange="playClick();clearErr('grp-bsleep','card-s4')"><label for="bs1" class="pill-label">Every night</label>
+          <input type="radio" name="bsleep" id="bs2" value="most" class="pill-option" onchange="playClick();clearErr('grp-bsleep','card-s4')"><label for="bs2" class="pill-label">Most nights</label>
+          <input type="radio" name="bsleep" id="bs3" value="sometimes" class="pill-option" onchange="playClick();clearErr('grp-bsleep','card-s4')"><label for="bs3" class="pill-label">Sometimes</label>
+          <input type="radio" name="bsleep" id="bs4" value="never" class="pill-option" onchange="playClick();clearErr('grp-bsleep','card-s4')"><label for="bs4" class="pill-label">Never</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- S5: Mood -->
+    <div class="section-card" id="card-s5">
+      <div class="section-header">
+        <div class="section-icon" style="background:linear-gradient(135deg,rgba(255,179,71,0.3),rgba(255,107,107,0.2));">🧠</div>
+        <div><div class="section-title">Mood & Wellbeing</div><div class="section-sub">How you feel in general</div></div>
+        <div class="section-num">05</div>
+      </div>
+      <div class="input-group" id="grp-mood">
+        <label class="input-label">Overall mood</label>
+        <div class="mood-row">
+          <span><input type="radio" name="mood" id="m1" value="1" class="mood-opt" onchange="updateProgress();playClick();clearErr('grp-mood','card-s5')"><label for="m1" class="mood-face">😫<div class="mood-val">Terrible</div></label></span>
+          <span><input type="radio" name="mood" id="m2" value="2" class="mood-opt" onchange="updateProgress();playClick();clearErr('grp-mood','card-s5')"><label for="m2" class="mood-face">😟<div class="mood-val">Bad</div></label></span>
+          <span><input type="radio" name="mood" id="m3" value="3" class="mood-opt" onchange="updateProgress();playClick();clearErr('grp-mood','card-s5')"><label for="m3" class="mood-face">😐<div class="mood-val">Okay</div></label></span>
+          <span><input type="radio" name="mood" id="m4" value="4" class="mood-opt" onchange="updateProgress();playClick();clearErr('grp-mood','card-s5')"><label for="m4" class="mood-face">🙂<div class="mood-val">Good</div></label></span>
+          <span><input type="radio" name="mood" id="m5" value="5" class="mood-opt" onchange="updateProgress();playClick();clearErr('grp-mood','card-s5')"><label for="m5" class="mood-face">😄<div class="mood-val">Great</div></label></span>
+        </div>
+      </div>
+      <div class="input-group" id="grp-anxiety">
+        <label class="input-label">Anxiety level</label>
+        <div class="pill-group">
+          <input type="radio" name="anxiety" id="an1" value="1" class="pill-option" onchange="playClick();clearErr('grp-anxiety','card-s5')"><label for="an1" class="pill-label">Not at all</label>
+          <input type="radio" name="anxiety" id="an2" value="2" class="pill-option" onchange="playClick();clearErr('grp-anxiety','card-s5')"><label for="an2" class="pill-label">A little</label>
+          <input type="radio" name="anxiety" id="an3" value="3" class="pill-option" onchange="playClick();clearErr('grp-anxiety','card-s5')"><label for="an3" class="pill-label">Moderate</label>
+          <input type="radio" name="anxiety" id="an4" value="4" class="pill-option" onchange="playClick();clearErr('grp-anxiety','card-s5')"><label for="an4" class="pill-label">Very anxious</label>
+        </div>
+      </div>
+      <div class="input-group" id="grp-stress">
+        <label class="input-label">Personal stress (unrelated to screens)</label>
+        <div class="pill-group">
+          <input type="radio" name="stress" id="st1" value="none" class="pill-option" onchange="playClick();clearErr('grp-stress','card-s5')"><label for="st1" class="pill-label">None</label>
+          <input type="radio" name="stress" id="st2" value="mild" class="pill-option" onchange="playClick();clearErr('grp-stress','card-s5')"><label for="st2" class="pill-label">Mild</label>
+          <input type="radio" name="stress" id="st3" value="moderate" class="pill-option" onchange="playClick();clearErr('grp-stress','card-s5')"><label for="st3" class="pill-label">Moderate</label>
+          <input type="radio" name="stress" id="st4" value="significant" class="pill-option" onchange="playClick();clearErr('grp-stress','card-s5')"><label for="st4" class="pill-label">Significant</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- S6: Focus -->
+    <div class="section-card" id="card-s6">
+      <div class="section-header">
+        <div class="section-icon" style="background:linear-gradient(135deg,rgba(67,233,123,0.3),rgba(0,210,255,0.2));">📚</div>
+        <div><div class="section-title">Focus & Academics</div><div class="section-sub">Study habits</div></div>
+        <div class="section-num">06</div>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Typical study hours</label>
+        <div class="slider-row">
+          <input type="range" min="0" max="8" step="0.5" value="0" id="study-sl" oninput="sl('study',this.value);updateProgress();updateSummary();">
+          <div class="slider-val" style="color:var(--accent3)"><span id="study-v">0</span><small> hrs</small></div>
+        </div>
+      </div>
+      <div class="input-group" id="grp-focus">
+        <label class="input-label">Focus quality during study</label>
+        <div class="pill-group">
+          <input type="radio" name="focus" id="f1" value="1" class="pill-option" onchange="updateProgress();playClick();clearErr('grp-focus','card-s6')"><label for="f1" class="pill-label">Couldn't focus</label>
+          <input type="radio" name="focus" id="f2" value="2" class="pill-option" onchange="updateProgress();playClick();clearErr('grp-focus','card-s6')"><label for="f2" class="pill-label">Distracted</label>
+          <input type="radio" name="focus" id="f3" value="3" class="pill-option" onchange="updateProgress();playClick();clearErr('grp-focus','card-s6')"><label for="f3" class="pill-label">Moderate</label>
+          <input type="radio" name="focus" id="f4" value="4" class="pill-option" onchange="updateProgress();playClick();clearErr('grp-focus','card-s6')"><label for="f4" class="pill-label">Good</label>
+          <input type="radio" name="focus" id="f5" value="5" class="pill-option" onchange="updateProgress();playClick();clearErr('grp-focus','card-s6')"><label for="f5" class="pill-label">Deep focus</label>
+        </div>
+      </div>
+      <div class="input-group" id="grp-checks">
+        <label class="input-label">Phone checks during study</label>
+        <div class="pill-group">
+          <input type="radio" name="checks" id="ch0" value="0" class="pill-option" onchange="playClick();clearErr('grp-checks','card-s6')"><label for="ch0" class="pill-label">0 — never</label>
+          <input type="radio" name="checks" id="ch1" value="3" class="pill-option" onchange="playClick();clearErr('grp-checks','card-s6')"><label for="ch1" class="pill-label">1–3</label>
+          <input type="radio" name="checks" id="ch2" value="6" class="pill-option" onchange="playClick();clearErr('grp-checks','card-s6')"><label for="ch2" class="pill-label">4–6</label>
+          <input type="radio" name="checks" id="ch3" value="10" class="pill-option" onchange="playClick();clearErr('grp-checks','card-s6')"><label for="ch3" class="pill-label">7–10</label>
+          <input type="radio" name="checks" id="ch4" value="15" class="pill-option" onchange="playClick();clearErr('grp-checks','card-s6')"><label for="ch4" class="pill-label">10+</label>
+        </div>
+      </div>
+      <div class="input-group" id="grp-acad">
+        <label class="input-label">Academic performance this week</label>
+        <div class="pill-group">
+          <input type="radio" name="acad" id="ac1" value="2" class="pill-option" onchange="playClick();clearErr('grp-acad','card-s6')"><label for="ac1" class="pill-label">Poor</label>
+          <input type="radio" name="acad" id="ac2" value="4" class="pill-option" onchange="playClick();clearErr('grp-acad','card-s6')"><label for="ac2" class="pill-label">Below average</label>
+          <input type="radio" name="acad" id="ac3" value="6" class="pill-option" onchange="playClick();clearErr('grp-acad','card-s6')"><label for="ac3" class="pill-label">Average</label>
+          <input type="radio" name="acad" id="ac4" value="8" class="pill-option" onchange="playClick();clearErr('grp-acad','card-s6')"><label for="ac4" class="pill-label">Good</label>
+          <input type="radio" name="acad" id="ac5" value="10" class="pill-option" onchange="playClick();clearErr('grp-acad','card-s6')"><label for="ac5" class="pill-label">Excellent</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="summary-strip" id="summary-strip" style="display:none;">
+      <div class="sum-col"><div class="sum-val" id="s-passive" style="color:var(--passive);">0.0</div><div class="sum-label">Passive hrs</div></div>
+      <div class="sum-col"><div class="sum-val" id="s-active" style="color:var(--active);">0.0</div><div class="sum-label">Active hrs</div></div>
+      <div class="sum-col"><div class="sum-val" id="s-sleep" style="color:var(--accent4);">7.0</div><div class="sum-label">Sleep hrs</div></div>
+    </div>
+    <div class="wizard-nav">
+      <button class="btn-back" id="btn-back" onclick="prevStep()">← Back</button>
+      <button class="btn-next" id="btn-next" onclick="nextStep()">Next →</button>
+    </div>
+  </div>
+
+  </div><!-- /survey-body -->
+
+  <!-- SUCCESS -->
+  <div class="success-screen" id="success-screen">
+    <div class="success-orb">
+      <div class="success-ring sr1"></div><div class="success-ring sr2"></div>
+      <div class="success-core" id="success-core-icon">✓</div>
+    </div>
+    <div class="success-title" id="success-title">Your Focus Score</div>
+    <div class="success-sub" id="success-sub">Based on your inputs — modelled after WHO-5, PHQ-2 and screen time research.</div>
+    <div class="fsi-card">
+      <div class="fsi-bignum" id="fsi-display" style="color:var(--active);">—<span class="fsi-100">/100</span></div>
+      <div class="fsi-verdict" id="fsi-verdict">Calculating...</div>
+      <div class="fsi-bar-track"><div class="fsi-bar-fill" id="fsi-fill" style="width:0%;background:var(--active);"></div></div>
+    </div>
+    <div class="formula-card">
+      <div class="formula-card-title">How it's calculated</div>
+      <div id="formula-body"></div>
+    </div>
+    <div class="insights-card">
+      <div class="insights-card-title" id="insights-heading">What your data reveals</div>
+      <div id="insights-body"></div>
+    </div>
+    <div class="cost-card" id="cost-card">
+      <div class="cost-card-title">What this is costing you annually</div>
+      <div class="cost-bignum">$<span id="cost-amount">0</span></div>
+      <div class="cost-sub" id="cost-sub">estimated productivity loss per year (time × opportunity cost)</div>
+      <div id="cost-body"></div>
+      <div class="cost-reality" id="cost-reality"></div>
+    </div>
+  </div>
+</div>
+<canvas id="confetti-canvas"></canvas>
+
+<script>
+// ═══ STARS ═══
+(function(){
+  var c=document.getElementById('star-canvas'),ctx=c.getContext('2d'),stars=[];
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize();window.addEventListener('resize',resize);
+  for(var i=0;i<200;i++)stars.push({x:Math.random()*window.innerWidth,y:Math.random()*window.innerHeight,r:Math.random()*1.4+0.2,a:Math.random(),speed:Math.random()*0.006+0.002,t:Math.random()*Math.PI*2});
+  function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+    stars.forEach(function(s){
+      s.t+=s.speed;
+      ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fillStyle='rgba(200,200,255,'+(s.a*(0.5+0.5*Math.sin(s.t)))+')';ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ═══ RIPPLE ═══
+document.addEventListener('click',function(e){
+  var r=document.createElement('div');r.className='ripple';
+  var s=80;r.style.cssText='width:'+s+'px;height:'+s+'px;left:'+(e.clientX-s/2)+'px;top:'+(e.clientY-s/2)+'px;';
+  document.body.appendChild(r);setTimeout(function(){r.remove();},500);
+});
+
+// ═══ AUDIO ═══
+var actx=null;
+function ac(){if(!actx)actx=new(window.AudioContext||window.webkitAudioContext)();return actx;}
+
+function playClick(){
+  try{
+    var a=ac(),o=a.createOscillator(),g=a.createGain();
+    o.connect(g);g.connect(a.destination);
+    o.type='sine';o.frequency.value=1200;
+    g.gain.setValueAtTime(0.05,a.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+0.08);
+    o.start(a.currentTime);o.stop(a.currentTime+0.08);
+  }catch(e){}
+}
+
+function playError(){
+  try{
+    var a=ac();
+    [200,150].forEach(function(f,i){
+      var o=a.createOscillator(),g=a.createGain();
+      o.connect(g);g.connect(a.destination);
+      o.type='sawtooth';o.frequency.value=f;
+      var t=a.currentTime+i*0.1;
+      g.gain.setValueAtTime(0.06,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.15);
+      o.start(t);o.stop(t+0.15);
+    });
+  }catch(e){}
+}
+
+function playSuccess(){
+  try{
+    var a=ac();
+    [[523,0],[659,0.1],[784,0.2],[1047,0.35]].forEach(function(n){
+      var o=a.createOscillator(),g=a.createGain();
+      o.connect(g);g.connect(a.destination);
+      o.type='sine';o.frequency.value=n[0];
+      var t=a.currentTime+n[1];
+      g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(0.12,t+0.04);
+      g.gain.exponentialRampToValueAtTime(0.001,t+0.35);
+      o.start(t);o.stop(t+0.35);
+    });
+  }catch(e){}
+}
+
+function handleLogoClick(){
+  try{
+    var a=ac();
+    [[440,0],[554,0.07],[659,0.14],[880,0.22],[1100,0.32]].forEach(function(n){
+      var o=a.createOscillator(),g=a.createGain();
+      o.connect(g);g.connect(a.destination);
+      o.type='triangle';o.frequency.value=n[0];
+      var t=a.currentTime+n[1];
+      g.gain.setValueAtTime(0.07,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.4);
+      o.start(t);o.stop(t+0.4);
+    });
+  }catch(e){}
+  var lw=document.getElementById('logo-wrap');
+  lw.classList.remove('logo-bounce');
+  void lw.offsetWidth;
+  lw.classList.add('logo-bounce');
+  setTimeout(function(){lw.classList.remove('logo-bounce');},400);
+}
+
+// Ambient background hum
+var ambientStarted=false;
+function startAmbient(){
+  if(ambientStarted)return;ambientStarted=true;
+  try{
+    var a=ac();
+    // Deep drone
+    [55,82.4,110].forEach(function(f,i){
+      var o=a.createOscillator(),g=a.createGain(),bq=a.createBiquadFilter();
+      o.type='sine';o.frequency.value=f;
+      bq.type='lowpass';bq.frequency.value=200;
+      o.connect(bq);bq.connect(g);g.connect(a.destination);
+      g.gain.setValueAtTime(0,a.currentTime);
+      g.gain.linearRampToValueAtTime(i===0?0.04:0.02,a.currentTime+3);
+      o.start();
+    });
+    // Gentle shimmer noise
+    var buf=a.createBuffer(1,a.sampleRate*2,a.sampleRate);
+    var d=buf.getChannelData(0);
+    for(var i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*0.015;
+    var src=a.createBufferSource();
+    src.buffer=buf;src.loop=true;
+    var gn=a.createGain(),bq2=a.createBiquadFilter();
+    bq2.type='bandpass';bq2.frequency.value=800;bq2.Q.value=0.5;
+    src.connect(bq2);bq2.connect(gn);gn.connect(a.destination);
+    gn.gain.setValueAtTime(0,a.currentTime);
+    gn.gain.linearRampToValueAtTime(0.008,a.currentTime+4);
+    src.start();
+  }catch(e){}
+}
+document.addEventListener('click',startAmbient,{once:true});
+
+// ═══ SLIDER ═══
+function sl(id,val){document.getElementById(id+'-v').textContent=val;playClick();}
+
+// ═══ LANDING ═══
+function startSurvey(){
+  document.querySelector('.hero').classList.add('compact');
+  var btn=document.getElementById('start-btn');
+  btn.style.opacity='0';btn.style.pointerEvents='none';
+  setTimeout(function(){btn.style.display='none';},300);
+  document.getElementById('survey-body').classList.add('visible');
+  document.body.classList.remove('in-landing');
+}
+
+// ═══ APPS with multi-select sub-activities ═══
+var APP_ICONS={instagram:'📸',tiktok:'🎵',youtube:'▶️',snapchat:'👻',twitter:'🐦',whatsapp:'💬',discord:'🎧',roblox:'🟥',minecraft:'⛏️',pubg:'🎯',freefire:'🔥',codmobile:'💥',chess:'♟️',coc:'⚔️',duolingo:'🦉',genshin:'✨'};
+var socialApps=[
+  {id:'instagram',name:'Instagram',acts:[['Scrolling/Reels','passive'],['Posting content','active'],['DMs / chat','mixed'],['Stories','passive']]},
+  {id:'tiktok',name:'TikTok',acts:[['Watching videos','passive'],['Creating videos','active']]},
+  {id:'youtube',name:'YouTube',acts:[['Entertainment','passive'],['Tutorials/learning','active'],['Music background','mixed'],['Shorts','passive']]},
+  {id:'snapchat',name:'Snapchat',acts:[['Stories','passive'],['Video calls','mixed'],['Streaks','passive']]},
+  {id:'twitter',name:'Twitter/X',acts:[['Browsing feed','passive'],['Posting/threads','active']]},
+  {id:'whatsapp',name:'WhatsApp',acts:[['Casual chatting','mixed'],['Voice/video call','mixed'],['Forwarding content','passive']]},
+  {id:'discord',name:'Discord',acts:[['Gaming chat','mixed'],['Study server','active'],['Browsing servers','passive']]}
+];
+var gameApps=[
+  {id:'roblox',name:'Roblox',acts:[['Playing games','passive'],['Developing a game','active'],['Exploring worlds','passive']]},
+  {id:'minecraft',name:'Minecraft',acts:[['Creative building','active'],['Survival mode','mixed'],['Just playing','passive']]},
+  {id:'pubg',name:'PUBG/BGMI',acts:[['Casual matches','passive'],['Competitive/ranked','mixed']]},
+  {id:'freefire',name:'Free Fire',acts:[['Casual','passive'],['Ranked play','mixed']]},
+  {id:'codmobile',name:'COD Mobile',acts:[['Casual','passive'],['Ranked','mixed']]},
+  {id:'chess',name:'Chess.com',acts:[['Playing games','active'],['Analysis','active']]},
+  {id:'coc',name:'Clash of Clans',acts:[['Farming','passive'],['Strategic planning','mixed']]},
+  {id:'duolingo',name:'Duolingo',acts:[['Lessons','active']]},
+  {id:'genshin',name:'Genshin Impact',acts:[['Story/exploration','passive'],['Build planning','mixed']]}
+];
+
+var appState={};
+var customTypeVal='passive';
+
+function renderApps(arr,gid){
+  var g=document.getElementById(gid);
+  arr.forEach(function(app){
+    appState[app.id]={expanded:false,selected:[],name:app.name};
+    var tile=document.createElement('div');
+    tile.className='app-tile';tile.id='tile-'+app.id;
+
+    var subsHTML=app.acts.map(function(a,i){
+      var uid='sub-'+app.id+'-'+i;
+      return '<input type="checkbox" class="sub-chk-opt '+a[1]+'" id="'+uid+'" onclick="event.stopPropagation()" onchange="toggleSubAct(\''+app.id+'\',\''+a[0]+'\',\''+a[1]+'\',this)"><label for="'+uid+'" class="sub-chk-label" onclick="event.stopPropagation()">'+a[0]+'</label>';
+    }).join('');
+
+    tile.innerHTML=
+      '<div class="app-tile-name">'+(APP_ICONS[app.id]||'📱')+' '+app.name+'</div>'+
+      '<div class="app-hrs-row" id="thrs-'+app.id+'">'+
+        '<span class="app-hrs-label">⏱</span>'+
+        '<input type="range" min="0" max="6" step="0.5" value="0" onclick="event.stopPropagation()" oninput="event.stopPropagation();updHrs(\''+app.id+'\',this.value)">'+
+        '<div class="app-hrs-val" id="thv-'+app.id+'">0h</div>'+
+      '</div>'+
+      '<div class="app-tile-expand" id="exp-'+app.id+'" onclick="event.stopPropagation();toggleExpand(\''+app.id+'\')">▸ pick activities</div>'+
+      '<div class="app-sub-checks" id="subs-'+app.id+'">'+subsHTML+'</div>'+
+      '<div class="app-selected-count" id="cnt-'+app.id+'">0</div>'
+
+    g.appendChild(tile);
+  });
+}
+
+function toggleExpand(id){
+  var s=appState[id];s.expanded=!s.expanded;
+  var subs=document.getElementById('subs-'+id);
+  var exp=document.getElementById('exp-'+id);
+  if(s.expanded){
+    subs.classList.add('visible');
+    exp.textContent='▾ hide activities';
+    document.getElementById('tile-'+id).classList.add('has-selection');
+  } else {
+    subs.classList.remove('visible');
+    exp.textContent='▸ pick activities';
+  }
+  playClick();
+}
+
+function toggleSubAct(id,act,type,el){
+  var s=appState[id];
+  if(el.checked){s.selected.push({act:act,type:type});}
+  else{s.selected=s.selected.filter(function(x){return x.act!==act;});}
+  var cnt=s.selected.length;
+  var cntEl=document.getElementById('cnt-'+id);
+  cntEl.textContent=cnt;
+  cntEl.classList.toggle('visible',cnt>0);
+  if(cnt>0)document.getElementById('tile-'+id).classList.add('has-selection');
+  playClick();
+}
+
+function updHrs(id,val){appState[id].hours=parseFloat(val);document.getElementById('thv-'+id).textContent=val+'h';}
+
+// Custom app
+function setCustomType(t){
+  customTypeVal=t;
+  ['passive','active','mixed'].forEach(function(x){
+    document.getElementById('ct-'+x).className='add-type-btn'+(x===t?' sel-'+x:'');
+  });
+}
+function addCustomApp(){
+  var name=document.getElementById('custom-name').value.trim();if(!name)return;
+  var id='c-'+Date.now();
+  appState[id]={expanded:false,selected:[],name:name,hours:0};
+  var g=document.getElementById('custom-grid');
+  var tile=document.createElement('div');tile.className='app-tile has-selection';tile.id='tile-'+id;
+  tile.innerHTML=
+    '<div class="app-tile-name">'+name+'</div>'+
+    '<div class="app-sub-checks visible" id="subs-'+id+'">'+
+      '<input type="checkbox" class="sub-chk-opt passive" id="sub-'+id+'-p" onchange="toggleSubAct(\''+id+'\',\'Passive use\',\'passive\',this)"><label for="sub-'+id+'-p" class="sub-chk-label" onclick="event.stopPropagation()">Passive</label>'+
+      '<input type="checkbox" class="sub-chk-opt active" id="sub-'+id+'-a" onchange="toggleSubAct(\''+id+'\',\'Active use\',\'active\',this)"><label for="sub-'+id+'-a" class="sub-chk-label" onclick="event.stopPropagation()">Active</label>'+
+      '<input type="checkbox" class="sub-chk-opt mixed" id="sub-'+id+'-m" onchange="toggleSubAct(\''+id+'\',\'Mixed use\',\'mixed\',this)"><label for="sub-'+id+'-m" class="sub-chk-label" onclick="event.stopPropagation()">Mixed</label>'+
+    '</div>'+
+    '<div class="app-hrs-row" id="thrs-'+id+'">'+
+      '<span class="app-hrs-label">⏱</span>'+
+      '<input type="range" min="0" max="6" step="0.5" value="0" onclick="event.stopPropagation()" oninput="event.stopPropagation();updHrs(\''+id+'\',this.value)">'+
+      '<div class="app-hrs-val" id="thv-'+id+'">0h</div>'+
+    '</div>'+
+    '<div class="app-selected-count" id="cnt-'+id+'">0</div>';
+  tile.onclick=function(e){if(e.target===tile){}};
+  g.appendChild(tile);
+  document.getElementById('custom-name').value='';
+}
+
+// ═══ PROGRESS ═══
+function updateProgress(){} // progress driven by wizard showStep()
+
+function updateSummary(){
+  document.getElementById('s-passive').textContent=parseFloat(document.getElementById('passive-sl').value).toFixed(1);
+  document.getElementById('s-active').textContent=parseFloat(document.getElementById('active-sl').value).toFixed(1);
+  document.getElementById('s-sleep').textContent=parseFloat(document.getElementById('sleep-sl').value).toFixed(1);
+}
+
+// ═══ VALIDATION ═══
+var requiredFields=[
+  {grp:'grp-age',card:'card-s1',check:function(){return !!document.querySelector('input[name=age]:checked');},msg:'Please select your age'},
+  {grp:'grp-gender',card:'card-s1',check:function(){return !!document.querySelector('input[name=gender]:checked');},msg:'Please select your gender'},
+  {grp:'grp-country',card:'card-s1',check:function(){return document.getElementById('country-search').value.trim().length>0;},msg:'Please enter your country'},
+  {grp:'grp-squal',card:'card-s4',check:function(){return !!document.querySelector('input[name=squal]:checked');},msg:'Please rate your sleep quality'},
+  {grp:'grp-mood',card:'card-s5',check:function(){return !!document.querySelector('input[name=mood]:checked');},msg:'Please select your mood'},
+  {grp:'grp-focus',card:'card-s6',check:function(){return !!document.querySelector('input[name=focus]:checked');},msg:'Please rate your focus'}
+];
+
+function clearErr(grpId,cardId){
+  document.getElementById(grpId).classList.remove('field-error');
+  // only remove card error if all fields in that card are now valid
+  var cardOk=true;
+  requiredFields.forEach(function(f){if(f.card===cardId&&!f.check())cardOk=false;});
+  if(cardOk)document.getElementById(cardId).classList.remove('error-card');
+}
+
+// ═══ SHARE ═══
+function shareApp(){
+  var url=window.location.href;
+  if(navigator.share){
+    navigator.share({title:'ScrollStop — Focus Intelligence Platform',text:'Find out your Focus Score in 5 minutes. A free screen time insight tool.',url:url}).catch(function(){});
+  } else {
+    navigator.clipboard.writeText(url).then(function(){
+      var c=document.getElementById('share-copied');
+      c.textContent='✓ Link copied!';
+      c.classList.add('show');
+      setTimeout(function(){c.classList.remove('show');},2200);
+    }).catch(function(){
+      prompt('Copy this link:',url);
+    });
+  }
+}
+
+// ═══ MISMATCH MODAL ═══
+var _mismatchCallback=null;
+function checkAppMismatch(onContinue){
+  var declared=parseFloat(document.getElementById('passive-sl').value)+parseFloat(document.getElementById('active-sl').value);
+  var appTotal=Object.keys(appState).reduce(function(s,k){return s+(appState[k].hours||0);},0);
+  var diff=Math.abs(declared-appTotal);
+  if(declared>0 && diff>0.5){
+    var dStr=declared.toFixed(1)+'h', aStr=appTotal.toFixed(1)+'h';
+    document.getElementById('mm-declared').textContent=dStr;
+    document.getElementById('mm-apps').textContent=aStr;
+    document.getElementById('mm-declared-inline').textContent=dStr;
+    document.getElementById('mm-apps-inline').textContent=aStr;
+    _mismatchCallback=onContinue;
+    document.getElementById('mismatch-overlay').classList.add('show');
+    return true;
+  }
+  return false;
+}
+function closeMismatch(proceed){
+  document.getElementById('mismatch-overlay').classList.remove('show');
+  if(proceed && typeof _mismatchCallback==='function')_mismatchCallback();
+  _mismatchCallback=null;
+}
+
+function showToast(msg){
+  var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  playError();
+  setTimeout(function(){t.classList.remove('show');},3000);
+}
+
+function validateForm(){
+  var errors=[];var firstCard=null;
+  requiredFields.forEach(function(f){
+    if(!f.check()){
+      errors.push(f);
+      document.getElementById(f.grp).classList.add('field-error');
+      document.getElementById(f.card).classList.add('error-card');
+      if(!firstCard)firstCard=f.card;
+    }
+  });
+  if(errors.length>0){
+    showToast(errors[0].msg+' ('+errors.length+' field'+(errors.length>1?'s':'')+' missing)');
+    // scroll to first error card
+    setTimeout(function(){
+      var el=document.getElementById(firstCard);
+      if(el){el.scrollIntoView({behavior:'smooth',block:'center'});}
+    },200);
+    return false;
+  }
+  return true;
+}
+
+// FSI
+function calcFSI(){
+  var passive=parseFloat(document.getElementById('passive-sl').value);
+  var active=parseFloat(document.getElementById('active-sl').value);
+  var sleep=parseFloat(document.getElementById('sleep-sl').value);
+  var study=parseFloat(document.getElementById('study-sl').value);
+  var mood=3,focus=3,acad=6;
+  var me=document.querySelector('input[name=mood]:checked');if(me)mood=parseInt(me.value);
+  var fe=document.querySelector('input[name=focus]:checked');if(fe)focus=parseInt(fe.value);
+  var ae=document.querySelector('input[name=acad]:checked');if(ae)acad=parseInt(ae.value);
+  var S=Math.max(0,Math.min(100,Math.round(100-(passive*15)+Math.min(active*5,20))));
+  var sm={4:0,4.5:10,5:20,5.5:35,6:50,6.5:63,7:75,7.5:88,8:100,8.5:95,9:88,9.5:80,10:75,10.5:68,11:60};
+  var L=sm[sleep]!==undefined?sm[sleep]:75;
+  var M=(mood/5)*100;
+  var ss=[0,20,40,55,65,75,85,92,100];
+  var si=Math.min(Math.floor(study*2),8);
+  var ce=document.querySelector('input[name=checks]:checked');
+  var checks=ce?parseInt(ce.value):5;
+  var F=Math.max(0,ss[si]+(focus-1)*5-checks*2);
+  var A=acad*10;
+  return Math.round((S*0.25)+(L*0.20)+(M*0.20)+(F*0.20)+(A*0.15));
+}
+
+function submitForm(){
+  playSuccess();
+  var fsi=calcFSI();
+
+  // Collect and persist to server
+  var formData={
+    fsi:fsi,
+    age:(document.querySelector('input[name=age]:checked')||{}).value||null,
+    gender:(document.querySelector('input[name=gender]:checked')||{}).value||null,
+    country:document.getElementById('country-search').value.trim(),
+    passiveHours:parseFloat(document.getElementById('passive-sl').value),
+    activeHours:parseFloat(document.getElementById('active-sl').value),
+    sleepHours:parseFloat(document.getElementById('sleep-sl').value),
+    sleepQuality:(document.querySelector('input[name=squal]:checked')||{}).value||null,
+    screensBeforeSleep:(document.querySelector('input[name=bsleep]:checked')||{}).value||null,
+    mood:(document.querySelector('input[name=mood]:checked')||{}).value||null,
+    anxiety:(document.querySelector('input[name=anxiety]:checked')||{}).value||null,
+    stress:(document.querySelector('input[name=stress]:checked')||{}).value||null,
+    studyHours:parseFloat(document.getElementById('study-sl').value),
+    focusQuality:(document.querySelector('input[name=focus]:checked')||{}).value||null,
+    phoneChecks:(document.querySelector('input[name=checks]:checked')||{}).value||null,
+    academicPerformance:(document.querySelector('input[name=acad]:checked')||{}).value||null
+  };
+  fetch('/survey/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(formData)}).catch(function(){});
+
+  document.getElementById('main-form').style.display='none';
+  var ss=document.getElementById('success-screen');ss.classList.add('visible');
+  var color=fsi>=75?'var(--active)':fsi>=50?'var(--mixed)':'var(--passive)';
+  var verdict=fsi>=75?'Strong focus — excellent habits overall 🌟':fsi>=50?'Moderate — meaningful improvement possible ⚡':'Low — passive screen time is impacting your wellbeing 🔴';
+  var el=document.getElementById('fsi-display');
+  el.innerHTML=fsi+'<span class="fsi-100">/100</span>';el.style.color=color;
+  document.getElementById('fsi-verdict').textContent=verdict;
+  document.getElementById('fsi-fill').style.width=fsi+'%';
+  document.getElementById('fsi-fill').style.background=color;
+  document.getElementById('fsi-fill').style.boxShadow='0 0 20px '+color;
+  if(fsi>=75){
+    document.getElementById('success-title').textContent='🎉 Outstanding Focus!';
+    document.getElementById('success-sub').textContent='You\'re in the top tier of focus health. Your habits are genuinely exceptional.';
+    document.getElementById('success-core-icon').textContent='🌟';
+    launchConfetti();
+  }
+  buildFormula(formData);
+  buildInsights(formData);
+  buildCost(formData);
+  setTimeout(function(){var s=document.getElementById('success-screen');if(s)s.scrollIntoView({behavior:'smooth',block:'start'});},150);
+}
+
+function resetForm(){
+  window.location.reload();
+}
+
+// ═══ COUNTRIES ═══
+var COUNTRIES=['Afghanistan','Albania','Algeria','Andorra','Angola','Antigua and Barbuda','Argentina','Armenia','Australia','Austria','Azerbaijan','Bahamas','Bahrain','Bangladesh','Barbados','Belarus','Belgium','Belize','Benin','Bhutan','Bolivia','Bosnia and Herzegovina','Botswana','Brazil','Brunei','Bulgaria','Burkina Faso','Burundi','Cabo Verde','Cambodia','Cameroon','Canada','Central African Republic','Chad','Chile','China','Colombia','Comoros','Congo','Costa Rica','Croatia','Cuba','Cyprus','Czech Republic','Denmark','Djibouti','Dominica','Dominican Republic','DR Congo','Ecuador','Egypt','El Salvador','Equatorial Guinea','Eritrea','Estonia','Eswatini','Ethiopia','Fiji','Finland','France','Gabon','Gambia','Georgia','Germany','Ghana','Greece','Grenada','Guatemala','Guinea','Guinea-Bissau','Guyana','Haiti','Honduras','Hungary','Iceland','India','Indonesia','Iran','Iraq','Ireland','Israel','Italy','Jamaica','Japan','Jordan','Kazakhstan','Kenya','Kiribati','Kuwait','Kyrgyzstan','Laos','Latvia','Lebanon','Lesotho','Liberia','Libya','Liechtenstein','Lithuania','Luxembourg','Madagascar','Malawi','Malaysia','Maldives','Mali','Malta','Marshall Islands','Mauritania','Mauritius','Mexico','Micronesia','Moldova','Monaco','Mongolia','Montenegro','Morocco','Mozambique','Myanmar','Namibia','Nauru','Nepal','Netherlands','New Zealand','Nicaragua','Niger','Nigeria','North Korea','North Macedonia','Norway','Oman','Pakistan','Palau','Palestine','Panama','Papua New Guinea','Paraguay','Peru','Philippines','Poland','Portugal','Qatar','Romania','Russia','Rwanda','Saint Kitts and Nevis','Saint Lucia','Saint Vincent and the Grenadines','Samoa','San Marino','São Tomé and Príncipe','Saudi Arabia','Senegal','Serbia','Seychelles','Sierra Leone','Singapore','Slovakia','Slovenia','Solomon Islands','Somalia','South Africa','South Korea','South Sudan','Spain','Sri Lanka','Sudan','Suriname','Sweden','Switzerland','Syria','Taiwan','Tajikistan','Tanzania','Thailand','Timor-Leste','Togo','Tonga','Trinidad and Tobago','Tunisia','Turkey','Turkmenistan','Tuvalu','Uganda','Ukraine','United Arab Emirates','United Kingdom','United States','Uruguay','Uzbekistan','Vanuatu','Vatican City','Venezuela','Vietnam','Yemen','Zambia','Zimbabwe'];
+
+function filterCountries(){
+  var q=document.getElementById('country-search').value.toLowerCase().trim();
+  var drop=document.getElementById('country-drop');
+  var list=q?COUNTRIES.filter(function(c){return c.toLowerCase().indexOf(q)!==-1;}):COUNTRIES.slice(0,80);
+  if(list.length===0){
+    drop.innerHTML='<div class="cs-option" style="cursor:default;pointer-events:none;">No results</div>';
+  } else {
+    drop.innerHTML=list.slice(0,80).map(function(c){
+      var esc=c.replace(/'/g,"\\'");
+      var disp=q?c.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<strong style="color:var(--text)">$1</strong>'):c;
+      return '<div class="cs-option" onmousedown="selectCountry(\''+esc+'\')">'+ disp+'</div>';
+    }).join('');
+  }
+  drop.classList.add('open');
+}
+
+function openCountryDrop(){filterCountries();}
+
+function selectCountry(c){
+  document.getElementById('country-search').value=c;
+  document.getElementById('country-drop').classList.remove('open');
+  clearErr('grp-country','card-s1');
+}
+
+function closeCountryDrop(){
+  setTimeout(function(){
+    var d=document.getElementById('country-drop');
+    if(d)d.classList.remove('open');
+  },200);
+}
+
+// ═══ WIZARD ═══
+var currentStep=0;
+var STEP_NAMES=['About You','Screen Time Habits','Apps You Use','Sleep','Mood & Wellbeing','Focus & Academics'];
+
+function showStep(n){
+  var cards=['card-s1','card-s2','card-s3','card-s4','card-s5','card-s6'];
+  cards.forEach(function(id,i){
+    var el=document.getElementById(id);
+    if(i===n){
+      el.classList.add('wizard-active');
+      el.style.animation='none';
+      void el.offsetWidth;
+      el.style.animation='';
+    } else {
+      el.classList.remove('wizard-active');
+    }
+  });
+  for(var i=0;i<6;i++){
+    var d=document.getElementById('dot-'+i);
+    d.classList.remove('active','done');
+    if(i===n)d.classList.add('active');
+    else if(i<n)d.classList.add('done');
+  }
+  var back=document.getElementById('btn-back');
+  var next=document.getElementById('btn-next');
+  back.style.display=n===0?'none':'flex';
+  next.textContent=n===5?'Calculate my Focus Score →':'Next →';
+  var strip=document.getElementById('summary-strip');
+  if(n===5){strip.style.display='grid';updateSummary();}
+  else strip.style.display='none';
+  document.getElementById('prog').style.width=Math.round((n/5)*100)+'%';
+  document.getElementById('step-label').textContent='Step '+(n+1)+' of 6 — '+STEP_NAMES[n];
+  document.getElementById('prog-section').textContent=STEP_NAMES[n];
+  document.getElementById('prog-text').textContent='Step '+(n+1)+' / 6';
+  currentStep=n;
+  var target=document.querySelector('.step-dots');
+  if(target && document.getElementById('survey-body').classList.contains('visible'))target.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+var stepChecks=[
+  function(){
+    var e=[];
+    if(!document.querySelector('input[name=age]:checked'))e.push({grp:'grp-age',card:'card-s1',msg:'Please select your age'});
+    if(!document.querySelector('input[name=gender]:checked'))e.push({grp:'grp-gender',card:'card-s1',msg:'Please select your gender'});
+    if(!document.getElementById('country-search').value.trim())e.push({grp:'grp-country',card:'card-s1',msg:'Please select your country'});
+    return e;
+  },
+  function(){return[];},
+  function(){return[];},
+  function(){
+    var e=[];
+    if(!document.querySelector('input[name=squal]:checked'))e.push({grp:'grp-squal',card:'card-s4',msg:'Please rate your sleep quality'});
+    if(!document.querySelector('input[name=bsleep]:checked'))e.push({grp:'grp-bsleep',card:'card-s4',msg:'Do you use screens before bed? Please answer'});
+    return e;
+  },
+  function(){
+    var e=[];
+    if(!document.querySelector('input[name=mood]:checked'))e.push({grp:'grp-mood',card:'card-s5',msg:'Please select your mood'});
+    if(!document.querySelector('input[name=anxiety]:checked'))e.push({grp:'grp-anxiety',card:'card-s5',msg:'Please rate your anxiety level'});
+    if(!document.querySelector('input[name=stress]:checked'))e.push({grp:'grp-stress',card:'card-s5',msg:'Please rate your stress level'});
+    return e;
+  },
+  function(){
+    var e=[];
+    if(!document.querySelector('input[name=focus]:checked'))e.push({grp:'grp-focus',card:'card-s6',msg:'Please rate your focus quality'});
+    if(!document.querySelector('input[name=checks]:checked'))e.push({grp:'grp-checks',card:'card-s6',msg:'How often do you check your phone during study? Please answer'});
+    if(!document.querySelector('input[name=acad]:checked'))e.push({grp:'grp-acad',card:'card-s6',msg:'Please rate your academic performance'});
+    return e;
+  }
+];
+
+function nextStep(){
+  var errs=stepChecks[currentStep]();
+  if(errs.length>0){
+    errs.forEach(function(e){
+      document.getElementById(e.grp).classList.add('field-error');
+      document.getElementById(e.card).classList.add('error-card');
+    });
+    showToast(errs[0].msg);
+    return;
+  }
+  document.getElementById(['card-s1','card-s2','card-s3','card-s4','card-s5','card-s6'][currentStep]).classList.remove('error-card');
+  if(currentStep===5){submitForm();}
+  else if(currentStep===2){
+    if(!checkAppMismatch(function(){showStep(3);}))showStep(3);
+  }
+  else{showStep(currentStep+1);}
+}
+
+function prevStep(){if(currentStep>0)showStep(currentStep-1);}
+
+// ═══ FORMULA BREAKDOWN ═══
+function buildFormula(d){
+  var p=d.passiveHours,a=d.activeHours,sl=d.sleepHours,st=d.studyHours;
+  var mood=parseInt(d.mood)||3,fq=parseInt(d.focusQuality)||3,ac=parseInt(d.academicPerformance)||6;
+  var ch=parseInt(d.phoneChecks)||5;
+  var S=Math.max(0,Math.min(100,Math.round(100-(p*15)+Math.min(a*5,20))));
+  var sm={4:0,4.5:10,5:20,5.5:35,6:50,6.5:63,7:75,7.5:88,8:100,8.5:95,9:88,9.5:80,10:75,10.5:68,11:60};
+  var L=sm[sl]!==undefined?sm[sl]:75;
+  var M=Math.round((mood/5)*100);
+  var ss=[0,20,40,55,65,75,85,92,100];
+  var F=Math.max(0,Math.round(ss[Math.min(Math.floor(st*2),8)]+(fq-1)*5-ch*2));
+  var A=ac*10;
+  function clr(v){return v>=75?'var(--active)':v>=50?'var(--mixed)':'var(--passive)';}
+  var rows=[
+    ['📱 Screen Time','Passive & active hours',S,'×25%'],
+    ['🌙 Sleep','Hours & quality',L,'×20%'],
+    ['🧠 Mood & Wellbeing','Overall state',M,'×20%'],
+    ['📚 Focus & Study','Depth + distractions',F,'×20%'],
+    ['🎓 Academics','Weekly performance',A,'×15%']
+  ];
+  document.getElementById('formula-body').innerHTML=rows.map(function(r){
+    return '<div class="frow"><span class="frow-left"><strong style="color:var(--text);font-size:13px;">'+r[0]+'</strong><br>'+r[1]+'</span><span class="frow-right"><span class="frow-score" style="color:'+clr(r[2])+'">'+r[2]+'</span><span class="frow-weight">'+r[3]+'</span></span></div>';
+  }).join('');
+}
+
+// ═══ INSIGHTS ═══
+function buildInsights(d){
+  var p=d.passiveHours,a=d.activeHours,sl=d.sleepHours,st=d.studyHours;
+  var mood=parseInt(d.mood)||3,fq=parseInt(d.focusQuality)||3,ac=parseInt(d.academicPerformance)||6;
+  var ch=parseInt(d.phoneChecks)||0,anx=parseInt(d.anxiety)||2;
+  var bsleep=d.screensBeforeSleep;
+  var items=[];
+  // Critical bad
+  if(p>3)items.push({i:'💀',t:'You scroll way too much',x:p+'h of passive screen time daily. Research shows >3h correlates with 40% lower attention span, dopamine dysregulation, and chronic comparison anxiety.',c:'bad'});
+  else if(p>2)items.push({i:'🔥',t:'Passive screen time creeping up',x:p+'h is above the 2h limit. A 30-min daily reduction creates measurable cognitive improvement within 2 weeks.',c:'warn'});
+  if(sl<6.5)items.push({i:'☠️',t:'Severe sleep deprivation',x:'Only '+sl+'h — dangerously low. Chronic sleep debt degrades performance by 30% and physically prevents memory consolidation overnight.',c:'bad'});
+  else if(sl<7)items.push({i:'😵',t:'Sleep is under the healthy line',x:sl+'h is under 7–9h optimal. Even 30 extra minutes boosts memory retention by up to 40% (Walker, 2017).',c:'warn'});
+  if(sl>9.5)items.push({i:'😪',t:'Oversleeping is a red flag',x:sl+'h exceeds healthy limits. This often signals poor sleep quality, screen-induced circadian disruption, or emotional fatigue.',c:'warn'});
+  if(bsleep==='always'||bsleep==='most')items.push({i:'📵',t:'Screens before bed every night',x:'Blue light suppresses melatonin by 50%, delays sleep onset ~90 min, and cuts deep-sleep stages where memory consolidation happens — compounding every other issue.',c:'bad'});
+  if(ch>=7)items.push({i:'🧨',t:'Phone detonates your study sessions',x:ch+'+ interruptions per session. Each triggers a 23-min focus recovery delay (UC Irvine). Your real study time is a fraction of what you think.',c:'bad'});
+  else if(ch>=4)items.push({i:'📱',t:'Phone taxing your focus',x:'~'+ch+' phone checks during study. Students who put phones in another room score 10–15% higher on comprehension tests immediately.',c:'warn'});
+  if(fq<=2)items.push({i:'🌀',t:'Focus is collapsing',x:'Inability to concentrate is a hallmark sign of dopamine pathway overstimulation from high-speed passive content. Your brain is being rewired for distraction.',c:'warn'});
+  if(mood<=2)items.push({i:'🌧️',t:'Low mood linked to your feed',x:'Passive scrolling and low mood are a self-reinforcing trap. Social comparison loops on social media systematically erode self-worth over time.',c:'bad'});
+  if(anx>=3)items.push({i:'⚡',t:'Elevated anxiety levels',x:'Anxiety and passive social media use are strongly correlated. Every swipe exposes your brain to curated highlights that make real life feel inadequate.',c:'warn'});
+  // Positives
+  if(p<=1.5)items.push({i:'🎯',t:'Elite screen time control',x:'Under 1.5h passive — top 10% of healthy screen usage. This single habit has the highest correlation with focus health, mood, and academic performance.',c:'good'});
+  else if(p<=2)items.push({i:'✨',t:'Healthy passive screen time',x:'You\'re within healthy limits. Screen time discipline is the #1 predictor of focus health — and you\'re nailing it.',c:'good'});
+  if(sl>=7&&sl<=9)items.push({i:'🌙',t:'Excellent sleep window',x:sl+'h is optimal. Consistent quality sleep is the #1 cognitive enhancer — no supplement, nootropic, or hack comes close.',c:'good'});
+  if(a>=1.5)items.push({i:'🚀',t:'Strong active screen usage',x:a+'h of creative/learning screen time. Active use builds skills without the dopamine disruption costs of passive scrolling.',c:'good'});
+  if(ch===0)items.push({i:'🏆',t:'Zero phone distractions',x:'No phone checks during study — elite-level discipline. Distraction-free deep work is where true long-term learning is built.',c:'good'});
+  if(st>=3)items.push({i:'💪',t:'Strong study commitment',x:st+'h of study reflects real dedication. Pair this with reducing passive screen time before studying for compound improvement.',c:'good'});
+  if(mood>=4)items.push({i:'🌈',t:'Positive mood baseline',x:'High mood correlates with better learning, creativity, and resilience. Your lifestyle supports rather than drains your mental wellbeing.',c:'good'});
+  if(ac>=8)items.push({i:'🎓',t:'Academic performance is strong',x:'Top results show your habits are genuinely effective. Keep monitoring to maintain this standard.',c:'good'});
+  if(items.length===0)items.push({i:'⭐',t:'Balanced habits overall',x:'Your data shows well-rounded patterns. Continue monitoring to maintain this balance.',c:'good'});
+  var bads=items.filter(function(i){return i.c==='bad';});
+  var warns=items.filter(function(i){return i.c==='warn';});
+  var goods=items.filter(function(i){return i.c==='good';});
+  var sorted=bads.concat(warns).concat(goods);
+  var delay=0;
+  document.getElementById('insights-body').innerHTML=sorted.map(function(it){
+    delay+=0.07;
+    var shk=it.c==='bad'?' iitem-shake':'';
+    return '<div class="iitem iitem-slide'+shk+'" style="animation-delay:'+delay+'s"><span class="iitem-icon">'+it.i+'</span><div><div class="iitem-title">'+it.t+'</div><div class="iitem-text">'+it.x+'</div></div></div>';
+  }).join('');
+  if(bads.length===0&&warns.length===0){document.getElementById('insights-heading').textContent='🏆 You\'re genuinely exceptional!';}
+  else if(bads.length>=3){document.getElementById('insights-heading').textContent='💀 Your screen habits are seriously harming you';}
+  else if(bads.length>0){document.getElementById('insights-heading').textContent='⚠️ Your honest eye-opener';}
+  else{document.getElementById('insights-heading').textContent='⚡ Some things to work on';}
+}
+
+// ═══ COST IMPACT ═══
+function buildCost(d){
+  var p=d.passiveHours,sl=d.sleepHours;
+  var ch=parseInt(d.phoneChecks)||0;
+  var excess=Math.max(0,p-2);
+  var scrollHrs=Math.round(excess*365);
+  var scrollCost=scrollHrs*10;
+  var focusHrs=ch>0?Math.round(ch*(23/60)*200):0;
+  var focusCost=focusHrs*10;
+  var sleepDebt=Math.max(0,7-sl);
+  var sleepHrs=Math.round(sleepDebt*365*0.23);
+  var sleepCost=sleepHrs*10;
+  var total=scrollCost+focusCost+sleepCost;
+  var totalHrs=scrollHrs+focusHrs+sleepHrs;
+  var card=document.getElementById('cost-card');
+  if(!card)return;
+  if(total===0){
+    document.getElementById('cost-sub').textContent='Zero measurable productivity loss. Your habits cost you nothing financially.';
+    card.style.borderColor='rgba(67,233,123,0.3)';
+    card.style.background='linear-gradient(135deg,rgba(67,233,123,0.06),rgba(0,210,255,0.03))';
+    return;
+  }
+  var rows=[];
+  if(scrollHrs>0)rows.push(['📵','Passive scroll drain',scrollHrs+' hrs wasted per year ('+excess.toFixed(1)+'h/day over the healthy 2h limit × 365 days)','$'+scrollCost.toLocaleString()]);
+  if(focusHrs>0)rows.push(['📱','Phone distraction tax',focusHrs+' study hrs lost per year ('+ch+' phone checks × 23 min recovery each × 200 study days)','$'+focusCost.toLocaleString()]);
+  if(sleepHrs>0)rows.push(['😴','Sleep penalty',sleepHrs+' effective hrs/yr lost — running at reduced cognitive capacity from '+sleepDebt.toFixed(1)+'h sleep debt','$'+sleepCost.toLocaleString()]);
+  document.getElementById('cost-body').innerHTML=rows.map(function(r){
+    return '<div class="crow"><span class="crow-icon">'+r[0]+'</span><div class="crow-body"><div class="crow-label">'+r[1]+'</div><div class="crow-detail">'+r[2]+'</div></div><span class="crow-cost">'+r[3]+'</span></div>';
+  }).join('');
+  var reality=[];
+  if(total>=10)reality.push(Math.floor(total/10)+' online courses');
+  if(total>=15)reality.push(Math.floor(total/15)+' months of Netflix');
+  if(total>=50)reality.push(Math.floor(total/50)+' books');
+  if(totalHrs>=40)reality.push(Math.floor(totalHrs/40)+' full skill certifications');
+  var r=document.getElementById('cost-reality');
+  if(reality.length)r.innerHTML='Instead you could have: '+reality.map(function(x){return'<span class="reality-pill">'+x+'</span>';}).join('');
+  var el=document.getElementById('cost-amount');
+  var dur=1800,started=false;
+  function runCounter(){
+    if(started)return;started=true;
+    var t0=null;
+    function countUp(ts){
+      if(!t0)t0=ts;
+      var prog=Math.min((ts-t0)/dur,1);
+      el.textContent=Math.round((1-Math.pow(1-prog,3))*total).toLocaleString();
+      if(prog<1)requestAnimationFrame(countUp);
+      else spawnMoneyFloat();
+    }
+    requestAnimationFrame(countUp);
+  }
+  if('IntersectionObserver' in window){
+    var obs=new IntersectionObserver(function(entries){
+      if(entries[0].isIntersecting){obs.disconnect();runCounter();}
+    },{threshold:0.25});
+    obs.observe(document.getElementById('cost-card'));
+  }else{
+    setTimeout(runCounter,400);
+  }
+}
+
+function spawnMoneyFloat(){
+  var card=document.getElementById('cost-card');
+  if(!card)return;
+  var sym=['💸','💰','📉','⏳','🔥','⚡','😤'];
+  for(var i=0;i<7;i++){
+    (function(n){
+      setTimeout(function(){
+        var el=document.createElement('span');
+        el.className='money-float';
+        el.style.left=(8+Math.random()*82)+'%';
+        el.style.animationDuration=(1.1+Math.random()*0.9)+'s';
+        el.textContent=sym[Math.floor(Math.random()*sym.length)];
+        card.appendChild(el);
+        setTimeout(function(){el.parentNode&&el.parentNode.removeChild(el);},2500);
+      },n*220);
+    })(i);
+  }
+}
+
+// ═══ CONFETTI ═══
+function launchConfetti(){
+  var cv=document.getElementById('confetti-canvas');
+  if(!cv)return;
+  cv.style.display='block';
+  cv.width=window.innerWidth;cv.height=window.innerHeight;
+  var ctx=cv.getContext('2d');
+  var cols=['#6C63FF','#00D2FF','#43E97B','#FFB347','#FF6B6B','#F7971E','#ffffff','#a78bfa'];
+  var pieces=[];
+  for(var i=0;i<200;i++)pieces.push({
+    x:Math.random()*cv.width,y:-20-Math.random()*cv.height*0.4,
+    w:Math.random()*10+4,h:Math.random()*5+3,
+    color:cols[Math.floor(Math.random()*cols.length)],
+    rot:Math.random()*Math.PI*2,drot:(Math.random()-0.5)*0.13,
+    vy:Math.random()*3.5+1.5,vx:(Math.random()-0.5)*2.5,alpha:1
+  });
+  var frame=0;
+  (function draw(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    var alive=false;
+    pieces.forEach(function(p){
+      p.y+=p.vy;p.x+=p.vx;p.rot+=p.drot;
+      if(frame>160)p.alpha=Math.max(0,p.alpha-0.014);
+      if(p.y<cv.height+30&&p.alpha>0)alive=true;
+      ctx.save();ctx.globalAlpha=p.alpha;
+      ctx.translate(p.x,p.y);ctx.rotate(p.rot);
+      ctx.fillStyle=p.color;ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+      ctx.restore();
+    });
+    frame++;
+    if(alive&&frame<340)requestAnimationFrame(draw);
+    else cv.style.display='none';
+  })();
+}
+
+// init
+window.scrollTo(0, 0);
+renderApps(socialApps,'social-grid');
+renderApps(gameApps,'games-grid');
+setCustomType('passive');
+showStep(0);
+</script>
+</body>
+</html>
