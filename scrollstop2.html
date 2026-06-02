@@ -335,6 +335,31 @@ body.in-landing{overflow:hidden;}
 .btn-mm-review:hover{opacity:0.88;}
 .btn-mm-continue{background:transparent;border:1px solid var(--border);border-radius:100px;padding:0.85rem 1.5rem;color:var(--muted);font-size:13.5px;cursor:pointer;transition:color 0.2s;}
 .btn-mm-continue:hover{color:#fff;}
+/* ANON TOGGLE */
+.anon-row{display:flex;align-items:center;gap:10px;margin-top:8px;}
+.anon-toggle{position:relative;width:38px;height:21px;flex-shrink:0;}
+.anon-toggle input{opacity:0;width:0;height:0;position:absolute;}
+.anon-slider{position:absolute;inset:0;background:var(--border);border-radius:20px;cursor:pointer;transition:background 0.25s;}
+.anon-slider:before{content:'';position:absolute;width:17px;height:17px;left:2px;top:2px;background:#fff;border-radius:50%;transition:transform 0.25s;}
+.anon-toggle input:checked+.anon-slider{background:var(--accent);}
+.anon-toggle input:checked+.anon-slider:before{transform:translateX(17px);}
+.anon-note{font-size:11.5px;color:var(--muted);}
+/* LEADERBOARD */
+.lb-card{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:1.5rem;margin-top:1.25rem;text-align:left;}
+.lb-card-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.09em;margin-bottom:1rem;display:flex;align-items:center;gap:8px;}
+.lb-card-title::after{content:'';flex:1;height:1px;background:var(--border);}
+.lb-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.04);}
+.lb-row:last-child{border-bottom:none;}
+.lb-rank{font-family:'Syne',sans-serif;font-size:17px;width:28px;text-align:center;flex-shrink:0;}
+.lb-rank-num{font-size:12px;font-weight:800;color:var(--muted);}
+.lb-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;flex-shrink:0;}
+.lb-info{flex:1;min-width:0;}
+.lb-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.lb-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+.lb-score{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;flex-shrink:0;}
+.lb-you{background:rgba(108,99,255,0.1);border-radius:12px;padding:4px 8px;margin:0 -8px;border:1px solid rgba(108,99,255,0.2);}
+.lb-loading{text-align:center;color:var(--muted);font-size:13px;padding:1.5rem 0;}
+
 /* SHARE BUTTON */
 #share-btn{position:fixed;bottom:2rem;right:2rem;z-index:9000;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent4));border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 24px rgba(108,99,255,0.5);transition:transform 0.22s ease,box-shadow 0.22s ease,width 0.3s cubic-bezier(0.34,1.56,0.64,1);overflow:hidden;white-space:nowrap;}
 #share-btn:hover{transform:translateY(-3px);box-shadow:0 14px 42px rgba(108,99,255,0.65);width:130px;border-radius:100px;}
@@ -539,8 +564,32 @@ body.in-landing{overflow:hidden;}
     <div class="section-card" id="card-s1">
       <div class="section-header">
         <div class="section-icon" style="background:linear-gradient(135deg,rgba(108,99,255,0.3),rgba(0,210,255,0.2));">👤</div>
-        <div><div class="section-title">About You</div><div class="section-sub">Anonymous — no name needed</div></div>
+        <div><div class="section-title">About You</div><div class="section-sub">Grade · School · Optional name</div></div>
         <div class="section-num">01</div>
+      </div>
+      <div class="input-group" id="grp-name">
+        <label class="input-label">Your name <span class="input-label-accent" style="background:rgba(108,99,255,0.12);color:var(--muted);">optional</span></label>
+        <input type="text" class="text-input" id="participant-name" placeholder="e.g. Alex..." autocomplete="off" oninput="updateAnonPreview()">
+        <div class="anon-row">
+          <label class="anon-toggle"><input type="checkbox" id="anon-toggle" onchange="updateAnonPreview()"><span class="anon-slider"></span></label>
+          <span class="anon-note" id="anon-note">Show my name on the leaderboard</span>
+        </div>
+      </div>
+      <div class="input-group" id="grp-grade">
+        <label class="input-label">Grade</label>
+        <div class="pill-group">
+          <input type="radio" name="grade" id="gr6" value="6" class="pill-option" onchange="playClick()"><label for="gr6" class="pill-label">6</label>
+          <input type="radio" name="grade" id="gr7" value="7" class="pill-option" onchange="playClick()"><label for="gr7" class="pill-label">7</label>
+          <input type="radio" name="grade" id="gr8" value="8" class="pill-option" onchange="playClick()"><label for="gr8" class="pill-label">8</label>
+          <input type="radio" name="grade" id="gr9" value="9" class="pill-option" onchange="playClick()"><label for="gr9" class="pill-label">9</label>
+          <input type="radio" name="grade" id="gr10" value="10" class="pill-option" onchange="playClick()"><label for="gr10" class="pill-label">10</label>
+          <input type="radio" name="grade" id="gr11" value="11" class="pill-option" onchange="playClick()"><label for="gr11" class="pill-label">11</label>
+          <input type="radio" name="grade" id="gr12" value="12" class="pill-option" onchange="playClick()"><label for="gr12" class="pill-label">12</label>
+        </div>
+      </div>
+      <div class="input-group" id="grp-school">
+        <label class="input-label">School <span class="input-label-accent" style="background:rgba(108,99,255,0.12);color:var(--muted);">optional</span></label>
+        <input type="text" class="text-input" id="school-name" placeholder="e.g. Delhi Public School..." autocomplete="off">
       </div>
       <div class="input-group" id="grp-age">
         <label class="input-label">Age</label>
@@ -778,6 +827,11 @@ body.in-landing{overflow:hidden;}
       <div class="cost-sub" id="cost-sub">estimated productivity loss per year (time × opportunity cost)</div>
       <div id="cost-body"></div>
       <div class="cost-reality" id="cost-reality"></div>
+    </div>
+    <div class="lb-card">
+      <div class="lb-card-title">🏆 FSI Leaderboard</div>
+      <div id="lb-body"><div class="lb-loading">Loading...</div></div>
+      <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px;opacity:0.55;">Updates every 5 minutes</div>
     </div>
   </div>
 </div>
@@ -1074,6 +1128,49 @@ function shareApp(){
   }
 }
 
+// ═══ ANON TOGGLE ═══
+function updateAnonPreview(){
+  var name=document.getElementById('participant-name').value.trim();
+  var anon=document.getElementById('anon-toggle').checked;
+  var note=document.getElementById('anon-note');
+  if(anon){note.textContent='Keeping name private — shown as "Anonymous"';}
+  else if(name){note.textContent='Showing as "'+name+'" on the leaderboard';}
+  else{note.textContent='Show my name on the leaderboard';}
+}
+
+// ═══ LEADERBOARD ═══
+var _myLbId=null;
+var _lbColors=['#6C63FF','#FF6B6B','#43E97B','#00D2FF','#FFB347','#FF69B4','#7B68EE','#20B2AA'];
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function loadLeaderboard(){
+  fetch('/api/leaderboard').then(function(r){return r.json();}).then(function(data){
+    var body=document.getElementById('lb-body');if(!body)return;
+    if(!data.length){body.innerHTML='<div class="lb-loading">No entries yet — be the first!</div>';return;}
+    body.innerHTML=data.map(function(e,i){
+      var rank=i+1;
+      var rankHtml=rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':'<span class="lb-rank-num">#'+rank+'</span>';
+      var initials=(e.displayName||'?').replace(/^Anonymous$/i,'?').charAt(0).toUpperCase();
+      var color=_lbColors[i%_lbColors.length];
+      var scoreColor=e.fsi>=75?'var(--active)':e.fsi>=50?'var(--mixed)':'var(--passive)';
+      var isYou=e.id===_myLbId;
+      var meta=[e.grade?'Grade '+e.grade:'',e.school||''].filter(Boolean).join(' · ');
+      return '<div class="lb-row'+(isYou?' lb-you':'')+'">'+
+        '<div class="lb-rank">'+rankHtml+'</div>'+
+        '<div class="lb-avatar" style="background:'+color+'22;color:'+color+';">'+initials+'</div>'+
+        '<div class="lb-info">'+
+          '<div class="lb-name">'+escHtml(e.displayName)+(isYou?' <span style="font-size:10px;opacity:0.55;">(you)</span>':'')+'</div>'+
+          (meta?'<div class="lb-meta">'+escHtml(meta)+'</div>':'')+
+        '</div>'+
+        '<div class="lb-score" style="color:'+scoreColor+';">'+e.fsi+'</div>'+
+      '</div>';
+    }).join('');
+  }).catch(function(){
+    var body=document.getElementById('lb-body');
+    if(body)body.innerHTML='<div class="lb-loading">Could not load leaderboard.</div>';
+  });
+}
+setInterval(loadLeaderboard,5*60*1000);
+
 // ═══ MISMATCH MODAL ═══
 var _mismatchCallback=null;
 function checkAppMismatch(onContinue){
@@ -1156,6 +1253,10 @@ function submitForm(){
   // Collect and persist to server
   var formData={
     fsi:fsi,
+    participantName:document.getElementById('participant-name').value.trim()||null,
+    isAnonymous:document.getElementById('anon-toggle').checked,
+    grade:(document.querySelector('input[name=grade]:checked')||{}).value||null,
+    school:document.getElementById('school-name').value.trim()||null,
     age:(document.querySelector('input[name=age]:checked')||{}).value||null,
     gender:(document.querySelector('input[name=gender]:checked')||{}).value||null,
     country:document.getElementById('country-search').value.trim(),
@@ -1172,7 +1273,10 @@ function submitForm(){
     phoneChecks:(document.querySelector('input[name=checks]:checked')||{}).value||null,
     academicPerformance:(document.querySelector('input[name=acad]:checked')||{}).value||null
   };
-  fetch('/survey/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(formData)}).catch(function(){});
+  fetch('/survey/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(formData)})
+    .then(function(r){return r.json();})
+    .then(function(d){_myLbId=d.id;loadLeaderboard();})
+    .catch(function(){loadLeaderboard();});
 
   document.getElementById('main-form').style.display='none';
   var ss=document.getElementById('success-screen');ss.classList.add('visible');

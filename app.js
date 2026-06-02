@@ -2,9 +2,21 @@ const express = require('express');
 const session = require('express-session');
 const methodOverride = require('method-override');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const SUBMISSIONS_FILE = path.join(__dirname, 'submissions.json');
+
+// Load persisted submissions on startup
+let surveySubmissions = [];
+try {
+  if (fs.existsSync(SUBMISSIONS_FILE)) {
+    surveySubmissions = JSON.parse(fs.readFileSync(SUBMISSIONS_FILE, 'utf8'));
+  }
+} catch (e) {
+  console.warn('Could not load submissions.json:', e.message);
+}
 
 // View engine
 app.set('view engine', 'ejs');
@@ -20,9 +32,6 @@ app.use(session({
   resave: false,
   saveUninitialized: true
 }));
-
-// Survey submissions store
-let surveySubmissions = [];
 
 // In-memory data store (replace with a DB later)
 let goals = [
@@ -80,7 +89,25 @@ app.post('/survey/submit', (req, res) => {
     ...req.body
   };
   surveySubmissions.push(submission);
+  // Persist to file
+  try { fs.writeFileSync(SUBMISSIONS_FILE, JSON.stringify(surveySubmissions, null, 2)); } catch (e) {}
   res.json({ success: true, id: submission.id });
+});
+
+app.get('/api/leaderboard', (req, res) => {
+  const entries = surveySubmissions
+    .filter(s => s.fsi != null)
+    .map(s => ({
+      id: s.id,
+      displayName: s.isAnonymous || !s.participantName ? 'Anonymous' : s.participantName,
+      grade: s.grade || null,
+      school: s.school || null,
+      fsi: parseInt(s.fsi) || 0,
+      timestamp: s.timestamp
+    }))
+    .sort((a, b) => b.fsi - a.fsi)
+    .slice(0, 50);
+  res.json(entries);
 });
 
 app.get('/dashboard', (req, res) => {
