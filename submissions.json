@@ -7,5 +7,29 @@
     "passiveHours": 3,
     "activeHours": 1,
     "sleepHours": 7
+  },
+  {
+    "id": 1780400515892,
+    "timestamp": "2026-06-02T11:41:55.892Z",
+    "fsi": 91,
+    "participantName": "Agrim Sinha Roy",
+    "isAnonymous": false,
+    "grade": "9",
+    "school": "Bishop's Co-Ed School, Kalyaninagar, Pune",
+    "age": "14",
+    "gender": "male",
+    "country": "India",
+    "passiveHours": 1.5,
+    "activeHours": 3,
+    "sleepHours": 7,
+    "sleepQuality": "5",
+    "screensBeforeSleep": "sometimes",
+    "mood": "5",
+    "anxiety": "3",
+    "stress": "mild",
+    "studyHours": 4.5,
+    "focusQuality": "3",
+    "phoneChecks": "3",
+    "academicPerformance": "8"
   }
 ]
