@@ -345,19 +345,36 @@ body.in-landing{overflow:hidden;}
 .anon-toggle input:checked+.anon-slider:before{transform:translateX(17px);}
 .anon-note{font-size:11.5px;color:var(--muted);}
 /* LEADERBOARD */
-.lb-card{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:1.5rem;margin-top:1.25rem;text-align:left;}
-.lb-card-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.09em;margin-bottom:1rem;display:flex;align-items:center;gap:8px;}
-.lb-card-title::after{content:'';flex:1;height:1px;background:var(--border);}
-.lb-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.04);}
-.lb-row:last-child{border-bottom:none;}
-.lb-rank{font-family:'Syne',sans-serif;font-size:17px;width:28px;text-align:center;flex-shrink:0;}
-.lb-rank-num{font-size:12px;font-weight:800;color:var(--muted);}
-.lb-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;flex-shrink:0;}
-.lb-info{flex:1;min-width:0;}
+.lb-card{background:linear-gradient(160deg,rgba(20,16,40,0.95),rgba(10,10,24,0.98));border:1px solid rgba(108,99,255,0.2);border-radius:22px;padding:1.5rem;margin-top:1.25rem;text-align:left;position:relative;overflow:hidden;}
+.lb-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,215,0,0.5),rgba(108,99,255,0.6),transparent);}
+.lb-card-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:1.25rem;display:flex;align-items:center;gap:10px;}
+.lb-card-title-text{background:linear-gradient(135deg,#FFD700,#FFA500);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-size:13px;font-weight:800;letter-spacing:0.05em;}
+.lb-card-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(255,215,0,0.3),transparent);}
+.lb-rows{display:flex;flex-direction:column;gap:5px;}
+.lb-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:12px;position:relative;overflow:hidden;transition:transform 0.15s ease;}
+.lb-row:hover{transform:translateX(3px);}
+.lb-row-plain{background:rgba(255,255,255,0.025);}
+@keyframes lbShimmer{0%{left:-100%;}60%{left:100%;}100%{left:100%;}}
+.lb-row.lb-gold{background:linear-gradient(135deg,rgba(255,215,0,0.14) 0%,rgba(255,179,0,0.07) 60%,rgba(255,215,0,0.12) 100%);border:1px solid rgba(255,215,0,0.3);}
+.lb-row.lb-gold::after{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,215,0,0.12),transparent);animation:lbShimmer 4s ease-in-out 0s infinite;}
+.lb-row.lb-silver{background:linear-gradient(135deg,rgba(200,200,220,0.12) 0%,rgba(160,170,190,0.06) 60%,rgba(200,200,220,0.1) 100%);border:1px solid rgba(192,192,220,0.28);}
+.lb-row.lb-silver::after{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(200,200,230,0.12),transparent);animation:lbShimmer 4s ease-in-out 0.8s infinite;}
+.lb-row.lb-bronze{background:linear-gradient(135deg,rgba(205,127,50,0.14) 0%,rgba(180,100,30,0.07) 60%,rgba(205,127,50,0.12) 100%);border:1px solid rgba(205,127,50,0.3);}
+.lb-row.lb-bronze::after{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(205,127,50,0.12),transparent);animation:lbShimmer 4s ease-in-out 1.6s infinite;}
+.lb-row.lb-you{outline:1px solid rgba(108,99,255,0.5);outline-offset:-1px;}
+.lb-rank{width:30px;text-align:center;flex-shrink:0;font-size:20px;line-height:1;}
+.lb-rank-num{font-family:'Syne',sans-serif;font-size:12px;font-weight:800;color:var(--muted);}
+.lb-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;flex-shrink:0;position:relative;z-index:1;}
+.lb-avatar-gold{box-shadow:0 0 0 2px rgba(255,215,0,0.5),0 0 12px rgba(255,215,0,0.3);}
+.lb-avatar-silver{box-shadow:0 0 0 2px rgba(192,192,220,0.5),0 0 12px rgba(192,192,220,0.2);}
+.lb-avatar-bronze{box-shadow:0 0 0 2px rgba(205,127,50,0.5),0 0 12px rgba(205,127,50,0.25);}
+.lb-info{flex:1;min-width:0;position:relative;z-index:1;}
 .lb-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.lb-name-gold{background:linear-gradient(90deg,#FFD700,#FFA040);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-weight:800;}
+.lb-name-silver{background:linear-gradient(90deg,#D0D0E8,#A8A8C0);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-weight:800;}
+.lb-name-bronze{background:linear-gradient(90deg,#CD7F32,#E8A060);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-weight:800;}
 .lb-meta{font-size:11px;color:var(--muted);margin-top:2px;}
-.lb-score{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;flex-shrink:0;}
-.lb-you{background:rgba(108,99,255,0.1);border-radius:12px;padding:4px 8px;margin:0 -8px;border:1px solid rgba(108,99,255,0.2);}
+.lb-score{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;flex-shrink:0;position:relative;z-index:1;}
 .lb-loading{text-align:center;color:var(--muted);font-size:13px;padding:1.5rem 0;}
 
 /* SHARE BUTTON */
@@ -589,7 +606,15 @@ body.in-landing{overflow:hidden;}
       </div>
       <div class="input-group" id="grp-school">
         <label class="input-label">School <span class="input-label-accent" style="background:rgba(108,99,255,0.12);color:var(--muted);">optional</span></label>
-        <input type="text" class="text-input" id="school-name" placeholder="e.g. Delhi Public School..." autocomplete="off">
+        <div class="country-wrap">
+          <input type="text" class="text-input" id="school-search" placeholder="Search your school..." autocomplete="off"
+            oninput="filterSchools()"
+            onfocus="openSchoolDrop()" onblur="closeSchoolDrop()">
+          <div class="cs-dropdown" id="school-drop"></div>
+        </div>
+        <div id="school-custom-row" style="display:none;margin-top:8px;">
+          <input type="text" class="text-input" id="school-custom" placeholder="Type your school name..." autocomplete="off">
+        </div>
       </div>
       <div class="input-group" id="grp-age">
         <label class="input-label">Age</label>
@@ -829,9 +854,9 @@ body.in-landing{overflow:hidden;}
       <div class="cost-reality" id="cost-reality"></div>
     </div>
     <div class="lb-card">
-      <div class="lb-card-title">🏆 FSI Leaderboard</div>
-      <div id="lb-body"><div class="lb-loading">Loading...</div></div>
-      <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px;opacity:0.55;">Updates every 5 minutes</div>
+      <div class="lb-card-title"><span style="font-size:20px;">🏆</span><span class="lb-card-title-text">FSI LEADERBOARD</span></div>
+      <div class="lb-rows" id="lb-body"><div class="lb-loading">Loading...</div></div>
+      <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:12px;opacity:0.45;">Updates every 5 minutes &nbsp;·&nbsp; Anonymous unless you share your name</div>
     </div>
   </div>
 </div>
@@ -1256,7 +1281,7 @@ function submitForm(){
     participantName:document.getElementById('participant-name').value.trim()||null,
     isAnonymous:document.getElementById('anon-toggle').checked,
     grade:(document.querySelector('input[name=grade]:checked')||{}).value||null,
-    school:document.getElementById('school-name').value.trim()||null,
+    school:(document.getElementById('school-custom-row').style.display!=='none'?document.getElementById('school-custom').value.trim():document.getElementById('school-search').value.trim())||null,
     age:(document.querySelector('input[name=age]:checked')||{}).value||null,
     gender:(document.querySelector('input[name=gender]:checked')||{}).value||null,
     country:document.getElementById('country-search').value.trim(),
@@ -1302,6 +1327,81 @@ function submitForm(){
 
 function resetForm(){
   window.location.reload();
+}
+
+// ═══ SCHOOLS ═══
+var SCHOOLS=[
+  // India — Delhi/NCR
+  'Delhi Public School (DPS), RK Puram','Delhi Public School (DPS), Noida','Delhi Public School (DPS), Dwarka',
+  'Delhi Public School (DPS), Mathura Road','Delhi Public School (DPS), Vasant Kunj','Modern School, New Delhi',
+  'St. Columba\'s School, Delhi','Frank Anthony Public School, Delhi','Springdales School, Delhi',
+  'Army Public School, New Delhi','Sardar Patel Vidyalaya, Delhi','Amity International School, Delhi',
+  'Bluebells School International, Delhi','The Shri Ram School, Delhi','Vasant Valley School, Delhi',
+  'Tagore International School, Delhi','Venkateshwar International School, Delhi',
+  // India — Dehradun & Boarding
+  'The Doon School, Dehradun','Welham Boys\' School, Dehradun','Welham Girls\' School, Dehradun',
+  'The Lawrence School, Sanawar','Woodstock School, Mussoorie','Laidlaw Memorial School, Mussoorie',
+  'Rashtriya Military School','Mayo College, Ajmer','The Scindia School, Gwalior',
+  // India — Mumbai
+  'Cathedral and John Connon School, Mumbai','Bombay Scottish School, Mumbai',
+  'Campion School, Mumbai','St. Mary\'s School, Mumbai','St. Xavier\'s High School, Mumbai',
+  'Dhirubhai Ambani International School, Mumbai','JBCN International School, Mumbai',
+  'Podar International School, Mumbai','Oberoi International School, Mumbai',
+  'American School of Bombay','Singapore International School, Mumbai',
+  // India — Kolkata
+  'La Martiniere College, Kolkata','Birla High School, Kolkata','The Heritage School, Kolkata',
+  'St. Xavier\'s Collegiate School, Kolkata','Loreto House, Kolkata','South Point School, Kolkata',
+  // India — Other Cities
+  'La Martiniere College, Lucknow','City Montessori School (CMS), Lucknow',
+  'Kendriya Vidyalaya','DAV Public School','Ryan International School',
+  'Vidya Mandir, Chennai','The Hindu Senior Secondary School, Chennai',
+  'Bishop Cotton School, Shimla','Mahindra United World College, Pune',
+  'Symbiosis International School, Pune','St. Joseph\'s Boys\' High School, Bangalore',
+  'National Public School, Bangalore','Inventure Academy, Bangalore',
+  'The International School Bangalore','Greenwood High, Bangalore',
+  'Hyderabad Public School','Chirec International School, Hyderabad',
+  'DPS, Ahmedabad','Riverside School, Ahmedabad',
+  // International
+  'Eton College, UK','Harrow School, UK','Rugby School, UK','Winchester College, UK',
+  'Phillips Academy Andover, USA','Phillips Exeter Academy, USA',
+  'The Hotchkiss School, USA','Choate Rosemary Hall, USA','The Lawrenceville School, USA',
+  'Le Rosey, Switzerland','International School of Geneva',
+  'Singapore American School','United World College of South East Asia (UWCSEA)',
+  'United World College (Dilijan / Maastricht / others)',
+  'British International School, various','Canadian International School'
+];
+
+function filterSchools(){
+  var q=document.getElementById('school-search').value.toLowerCase().trim();
+  var drop=document.getElementById('school-drop');
+  document.getElementById('school-custom-row').style.display='none';
+  var list=q?SCHOOLS.filter(function(s){return s.toLowerCase().indexOf(q)!==-1;}):SCHOOLS.slice(0,40);
+  var html=list.slice(0,40).map(function(s){
+    var esc=s.replace(/'/g,"\\'");
+    var disp=q?s.replace(new RegExp('('+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi'),'<strong style="color:var(--text)">$1</strong>'):s;
+    return '<div class="cs-option" onmousedown="selectSchool(\''+esc+'\')">'+ disp+'</div>';
+  }).join('');
+  html+='<div class="cs-option" style="color:var(--accent);border-top:1px solid var(--border);margin-top:4px;" onmousedown="addCustomSchool()">+ My school isn\'t listed</div>';
+  drop.innerHTML=html;
+  drop.classList.add('open');
+}
+function openSchoolDrop(){filterSchools();}
+function selectSchool(s){
+  document.getElementById('school-search').value=s;
+  document.getElementById('school-drop').classList.remove('open');
+  document.getElementById('school-custom-row').style.display='none';
+}
+function addCustomSchool(){
+  document.getElementById('school-search').value='';
+  document.getElementById('school-drop').classList.remove('open');
+  document.getElementById('school-custom-row').style.display='block';
+  document.getElementById('school-custom').focus();
+}
+function closeSchoolDrop(){
+  setTimeout(function(){
+    var d=document.getElementById('school-drop');
+    if(d)d.classList.remove('open');
+  },200);
 }
 
 // ═══ COUNTRIES ═══
