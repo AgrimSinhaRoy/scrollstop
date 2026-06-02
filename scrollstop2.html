@@ -370,7 +370,9 @@ body.in-landing{overflow:hidden;}
 .lb-avatar-bronze{box-shadow:0 0 0 2px rgba(205,127,50,0.5),0 0 12px rgba(205,127,50,0.25);}
 .lb-info{flex:1;min-width:0;position:relative;z-index:1;}
 .lb-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.lb-nameplate{display:inline-block;padding:2px 11px 3px;border-radius:5px;font-family:'Syne',sans-serif;font-size:12px;font-weight:800;letter-spacing:0.06em;max-width:155px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;}
+.lb-nameplate{display:inline-flex;align-items:center;gap:5px;padding:2px 9px 3px;border-radius:5px;font-family:'Syne',sans-serif;font-size:12px;font-weight:800;letter-spacing:0.06em;vertical-align:middle;max-width:175px;}
+.lb-nameplate::before,.lb-nameplate::after{content:'❖';font-size:7px;opacity:0.7;flex-shrink:0;}
+.lb-plate-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
 .lb-nameplate-gold{background:linear-gradient(180deg,#F7E57A 0%,#C8960C 28%,#FFD700 52%,#B8860B 74%,#9A7D0A 100%);border:1.5px solid #9A7D0A;box-shadow:inset 0 1px 2px rgba(255,255,200,0.65),inset 0 -1px 2px rgba(0,0,0,0.38),0 3px 12px rgba(180,140,0,0.45);color:#3D1C02;text-shadow:0 1px 0 rgba(255,255,200,0.55);}
 .lb-nameplate-silver{background:linear-gradient(180deg,#F0F0F8 0%,#909098 28%,#D8D8E8 52%,#A0A0B0 74%,#6A6A7A 100%);border:1.5px solid #707080;box-shadow:inset 0 1px 2px rgba(255,255,255,0.65),inset 0 -1px 2px rgba(0,0,0,0.32),0 3px 12px rgba(100,100,130,0.35);color:#1A1A2E;text-shadow:0 1px 0 rgba(255,255,255,0.55);}
 .lb-nameplate-bronze{background:linear-gradient(180deg,#ECA870 0%,#8B4513 28%,#CD7F32 52%,#A05820 74%,#7D3B0F 100%);border:1.5px solid #7D3B0F;box-shadow:inset 0 1px 2px rgba(255,200,140,0.5),inset 0 -1px 2px rgba(0,0,0,0.42),0 3px 12px rgba(140,80,20,0.4);color:#FFF5E0;text-shadow:0 1px 0 rgba(0,0,0,0.35);}
@@ -568,8 +570,6 @@ body.in-landing{overflow:hidden;}
       <div class="hstat"><div class="hstat-num">FSI</div><div class="hstat-label">Focus Score</div></div>
       <div class="hstat-div"></div>
       <div class="hstat"><div class="hstat-num">5 min</div><div class="hstat-label">To complete</div></div>
-      <div class="hstat-div"></div>
-      <div class="hstat"><div class="hstat-num">100%</div><div class="hstat-label">Anonymous</div></div>
     </div>
     <button id="start-btn" onclick="startSurvey()">Get My Focus Score <span class="start-arrow">→</span></button>
   </div>
@@ -660,6 +660,16 @@ body.in-landing{overflow:hidden;}
             oninput="filterCountries();clearErr('grp-country','card-s1');playKeyClick()"
             onfocus="openCountryDrop()" onblur="closeCountryDrop()">
           <div class="cs-dropdown" id="country-drop"></div>
+        </div>
+      </div>
+      <div class="input-group" id="grp-sleep-general">
+        <label class="input-label">Average sleep per night <span class="input-label-accent" style="background:rgba(0,210,255,0.1);color:var(--accent4);">general</span></label>
+        <div class="pill-group">
+          <input type="radio" name="sleep-general" id="sgen1" value="under6" class="pill-option" onchange="updateProgress();playClick()"><label for="sgen1" class="pill-label">😵 &lt; 6h</label>
+          <input type="radio" name="sleep-general" id="sgen2" value="6-7" class="pill-option" onchange="updateProgress();playClick()"><label for="sgen2" class="pill-label">😐 6–7h</label>
+          <input type="radio" name="sleep-general" id="sgen3" value="7-8" class="pill-option" onchange="updateProgress();playClick()"><label for="sgen3" class="pill-label">🙂 7–8h</label>
+          <input type="radio" name="sleep-general" id="sgen4" value="8-9" class="pill-option" onchange="updateProgress();playClick()"><label for="sgen4" class="pill-label">😊 8–9h</label>
+          <input type="radio" name="sleep-general" id="sgen5" value="9plus" class="pill-option" onchange="updateProgress();playClick()"><label for="sgen5" class="pill-label">🌙 9h+</label>
         </div>
       </div>
     </div>
@@ -1258,7 +1268,7 @@ function loadLeaderboard(){
       var rowCls='lb-row '+(isTop3?metalRow[i]:'lb-row-plain')+(isYou?' lb-you':'');
       var avCls='lb-avatar'+(isTop3?' '+metalAv[i]:'');
       var nameHtml=isTop3
-        ?'<span class="lb-nameplate '+metalPlate[i]+'">'+escHtml(e.displayName)+'</span>'+(isYou?' <span style="font-size:10px;opacity:0.55;">(you)</span>':'')
+        ?'<span class="lb-nameplate '+metalPlate[i]+'"><span class="lb-plate-name">'+escHtml(e.displayName)+'</span></span>'+(isYou?' <span style="font-size:10px;opacity:0.55;">(you)</span>':'')
         :escHtml(e.displayName)+(isYou?' <span style="font-size:10px;opacity:0.55;">(you)</span>':'');
       return '<div class="'+rowCls+'">'+
         '<div class="lb-rank">'+rankHtml+'</div>'+
@@ -1380,6 +1390,7 @@ function submitForm(){
     age:(document.querySelector('input[name=age]:checked')||{}).value||null,
     gender:(document.querySelector('input[name=gender]:checked')||{}).value||null,
     country:document.getElementById('country-search').value.trim(),
+    sleepGeneral:(document.querySelector('input[name=sleep-general]:checked')||{}).value||null,
     passiveHours:parseFloat(document.getElementById('passive-sl').value),
     activeHours:parseFloat(document.getElementById('active-sl').value),
     sleepHours:parseFloat(document.getElementById('sleep-sl').value),
