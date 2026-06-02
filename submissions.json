@@ -55,5 +55,29 @@
     "focusQuality": "2",
     "phoneChecks": "6",
     "academicPerformance": "6"
+  },
+  {
+    "id": 1780403584636,
+    "timestamp": "2026-06-02T12:33:04.636Z",
+    "fsi": 94,
+    "participantName": null,
+    "isAnonymous": true,
+    "grade": "7",
+    "school": "Delhi Public School (DPS), RK Puram",
+    "age": "15",
+    "gender": "female",
+    "country": "India",
+    "passiveHours": 0.5,
+    "activeHours": 2,
+    "sleepHours": 7.5,
+    "sleepQuality": "5",
+    "screensBeforeSleep": "never",
+    "mood": "5",
+    "anxiety": "3",
+    "stress": "mild",
+    "studyHours": 4.5,
+    "focusQuality": "3",
+    "phoneChecks": "6",
+    "academicPerformance": "8"
   }
 ]

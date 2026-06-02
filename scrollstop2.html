@@ -662,16 +662,6 @@ body.in-landing{overflow:hidden;}
           <div class="cs-dropdown" id="country-drop"></div>
         </div>
       </div>
-      <div class="input-group" id="grp-sleep-general">
-        <label class="input-label">Average sleep per night <span class="input-label-accent" style="background:rgba(0,210,255,0.1);color:var(--accent4);">general</span></label>
-        <div class="pill-group">
-          <input type="radio" name="sleep-general" id="sgen1" value="under6" class="pill-option" onchange="updateProgress();playClick()"><label for="sgen1" class="pill-label">😵 &lt; 6h</label>
-          <input type="radio" name="sleep-general" id="sgen2" value="6-7" class="pill-option" onchange="updateProgress();playClick()"><label for="sgen2" class="pill-label">😐 6–7h</label>
-          <input type="radio" name="sleep-general" id="sgen3" value="7-8" class="pill-option" onchange="updateProgress();playClick()"><label for="sgen3" class="pill-label">🙂 7–8h</label>
-          <input type="radio" name="sleep-general" id="sgen4" value="8-9" class="pill-option" onchange="updateProgress();playClick()"><label for="sgen4" class="pill-label">😊 8–9h</label>
-          <input type="radio" name="sleep-general" id="sgen5" value="9plus" class="pill-option" onchange="updateProgress();playClick()"><label for="sgen5" class="pill-label">🌙 9h+</label>
-        </div>
-      </div>
     </div>
 
     <!-- S2 -->
@@ -725,14 +715,17 @@ body.in-landing{overflow:hidden;}
     <div class="section-card" id="card-s4">
       <div class="section-header">
         <div class="section-icon" style="background:linear-gradient(135deg,rgba(108,99,255,0.3),rgba(180,120,255,0.2));">🌙</div>
-        <div><div class="section-title">Sleep</div><div class="section-sub">Last night's rest</div></div>
+        <div><div class="section-title">Sleep</div><div class="section-sub">On average, how much do you sleep?</div></div>
         <div class="section-num">04</div>
       </div>
-      <div class="input-group">
-        <label class="input-label">Hours slept</label>
-        <div class="slider-row" style="align-items:center;">
-          <input type="range" min="4" max="11" step="0.5" value="7" id="sleep-sl" style="max-width:calc(100% - 80px);" oninput="sl('sleep',this.value);updateProgress();updateSummary();">
-          <div class="slider-val" style="color:var(--accent4);min-width:72px;"><span id="sleep-v">7</span><small> hrs</small></div>
+      <div class="input-group" id="grp-sleep-general">
+        <label class="input-label">Hours of sleep on average</label>
+        <div class="pill-group">
+          <input type="radio" name="sleep-general" id="sgen1" value="under6" class="pill-option" onchange="updateProgress();playClick();updateSummary()"><label for="sgen1" class="pill-label">&lt; 6h</label>
+          <input type="radio" name="sleep-general" id="sgen2" value="6-7" class="pill-option" onchange="updateProgress();playClick();updateSummary()"><label for="sgen2" class="pill-label">6–7h</label>
+          <input type="radio" name="sleep-general" id="sgen3" value="7-8" class="pill-option" onchange="updateProgress();playClick();updateSummary()"><label for="sgen3" class="pill-label">7–8h</label>
+          <input type="radio" name="sleep-general" id="sgen4" value="8-9" class="pill-option" onchange="updateProgress();playClick();updateSummary()"><label for="sgen4" class="pill-label">8–9h</label>
+          <input type="radio" name="sleep-general" id="sgen5" value="9plus" class="pill-option" onchange="updateProgress();playClick();updateSummary()"><label for="sgen5" class="pill-label">9h+</label>
         </div>
       </div>
       <div class="input-group" id="grp-squal">
@@ -1197,7 +1190,8 @@ function updateProgress(){} // progress driven by wizard showStep()
 function updateSummary(){
   document.getElementById('s-passive').textContent=parseFloat(document.getElementById('passive-sl').value).toFixed(1);
   document.getElementById('s-active').textContent=parseFloat(document.getElementById('active-sl').value).toFixed(1);
-  document.getElementById('s-sleep').textContent=parseFloat(document.getElementById('sleep-sl').value).toFixed(1);
+  var _sg=(document.querySelector('input[name=sleep-general]:checked')||{}).value;
+  document.getElementById('s-sleep').textContent={'under6':'<6h','6-7':'6-7h','7-8':'7-8h','8-9':'8-9h','9plus':'9h+'}[_sg]||'—';
 }
 
 // ═══ VALIDATION ═══
@@ -1357,7 +1351,8 @@ function validateForm(){
 function calcFSI(){
   var passive=parseFloat(document.getElementById('passive-sl').value);
   var active=parseFloat(document.getElementById('active-sl').value);
-  var sleep=parseFloat(document.getElementById('sleep-sl').value);
+  var _sgv=(document.querySelector('input[name=sleep-general]:checked')||{}).value||'7-8';
+  var sleep={'under6':5.5,'6-7':6.5,'7-8':7.5,'8-9':8.5,'9plus':9.5}[_sgv]||7.5;
   var study=parseFloat(document.getElementById('study-sl').value);
   var mood=3,focus=3,acad=6;
   var me=document.querySelector('input[name=mood]:checked');if(me)mood=parseInt(me.value);
@@ -1390,10 +1385,9 @@ function submitForm(){
     age:(document.querySelector('input[name=age]:checked')||{}).value||null,
     gender:(document.querySelector('input[name=gender]:checked')||{}).value||null,
     country:document.getElementById('country-search').value.trim(),
-    sleepGeneral:(document.querySelector('input[name=sleep-general]:checked')||{}).value||null,
     passiveHours:parseFloat(document.getElementById('passive-sl').value),
     activeHours:parseFloat(document.getElementById('active-sl').value),
-    sleepHours:parseFloat(document.getElementById('sleep-sl').value),
+    sleepHours:({'under6':5.5,'6-7':6.5,'7-8':7.5,'8-9':8.5,'9plus':9.5}[(document.querySelector('input[name=sleep-general]:checked')||{}).value])||null,
     sleepQuality:(document.querySelector('input[name=squal]:checked')||{}).value||null,
     screensBeforeSleep:(document.querySelector('input[name=bsleep]:checked')||{}).value||null,
     mood:(document.querySelector('input[name=mood]:checked')||{}).value||null,
