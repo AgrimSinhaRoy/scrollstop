@@ -608,7 +608,7 @@ body.in-landing{overflow:hidden;}
         <label class="input-label">School <span class="input-label-accent" style="background:rgba(108,99,255,0.12);color:var(--muted);">optional</span></label>
         <div class="country-wrap">
           <input type="text" class="text-input" id="school-search" placeholder="Search your school..." autocomplete="off"
-            oninput="filterSchools()"
+            oninput="filterSchools();playKeyClick()"
             onfocus="openSchoolDrop()" onblur="closeSchoolDrop()">
           <div class="cs-dropdown" id="school-drop"></div>
         </div>
@@ -900,6 +900,25 @@ function playClick(){
     g.gain.setValueAtTime(0.05,a.currentTime);
     g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+0.08);
     o.start(a.currentTime);o.stop(a.currentTime+0.08);
+  }catch(e){}
+}
+
+function playKeyClick(){
+  try{
+    var a=ac();
+    var dur=0.018;
+    var buf=a.createBuffer(1,Math.floor(a.sampleRate*dur),a.sampleRate);
+    var d=buf.getChannelData(0);
+    for(var i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length);
+    var src=a.createBufferSource();
+    src.buffer=buf;
+    var bp=a.createBiquadFilter();
+    bp.type='bandpass';bp.frequency.value=2200+Math.random()*600;bp.Q.value=0.9;
+    var g=a.createGain();
+    g.gain.setValueAtTime(0.22,a.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,a.currentTime+dur);
+    src.connect(bp);bp.connect(g);g.connect(a.destination);
+    src.start();src.stop(a.currentTime+dur);
   }catch(e){}
 }
 
@@ -1355,8 +1374,19 @@ var SCHOOLS=[
   'La Martiniere College, Lucknow','City Montessori School (CMS), Lucknow',
   'Kendriya Vidyalaya','DAV Public School','Ryan International School',
   'Vidya Mandir, Chennai','The Hindu Senior Secondary School, Chennai',
-  'Bishop Cotton School, Shimla','Mahindra United World College, Pune',
-  'Symbiosis International School, Pune','St. Joseph\'s Boys\' High School, Bangalore',
+  'Bishop Cotton School, Shimla',
+  // India — Pune
+  'Bishop\'s Co-Ed School, Kalyaninagar, Pune','Bishop\'s School, Undri, Pune','Bishop\'s School, Camp, Pune',
+  'Mahindra United World College, Pune','Symbiosis International School, Pune',
+  'DPS, Pune','VIBGYOR High, Pune','The Orchid School, Pune',
+  'MIT School, Pune','Victorious Kidss Educares, Pune',
+  'Podar International School, Pune','Global Indian International School, Pune',
+  'Wisdom High International School, Pune','Lexicon International School, Pune',
+  'Aga Khan Academy, Pune','Christ Church School, Pune',
+  'St. Mary\'s School, Pune','St. Joseph\'s High School, Pune',
+  'Army Public School, Pune','Wadia College High School, Pune',
+  'Abhinava Vidyalaya, Pune','Sanskriti School, Pune','Pune International School',
+  'St. Joseph\'s Boys\' High School, Bangalore',
   'National Public School, Bangalore','Inventure Academy, Bangalore',
   'The International School Bangalore','Greenwood High, Bangalore',
   'Hyderabad Public School','Chirec International School, Hyderabad',
