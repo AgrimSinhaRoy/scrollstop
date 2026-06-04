@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ScrollBye — Challenge</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#04050d;--surface:#0a0c1a;--surface2:#111326;
+  --border:rgba(255,255,255,0.06);--border-hover:rgba(108,99,255,0.4);
+  --accent:#6C63FF;--accent2:#FF6B6B;--accent3:#43E97B;--accent4:#00D2FF;
+  --text:#EEEEFF;--muted:rgba(220,220,255,0.42);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden;}
+
+/* BACKGROUND */
+#star-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.55;}
+.grid-overlay{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(rgba(108,99,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(108,99,255,0.025) 1px,transparent 1px);
+  background-size:80px 80px;}
+.orb{position:fixed;border-radius:50%;pointer-events:none;z-index:0;filter:blur(120px);}
+.orb1{width:700px;height:700px;background:radial-gradient(circle,rgba(108,99,255,0.16),transparent 70%);top:-250px;left:-250px;animation:od1 22s ease-in-out infinite alternate;}
+.orb2{width:500px;height:500px;background:radial-gradient(circle,rgba(255,107,107,0.11),transparent 70%);bottom:-120px;right:-120px;animation:od2 28s ease-in-out infinite alternate;}
+.orb3{width:400px;height:400px;background:radial-gradient(circle,rgba(0,210,255,0.09),transparent 70%);top:45%;left:55%;animation:od3 20s ease-in-out infinite alternate;}
+@keyframes od1{0%{transform:translate(0,0)}100%{transform:translate(70px,90px)}}
+@keyframes od2{0%{transform:translate(0,0)}100%{transform:translate(-60px,-70px)}}
+@keyframes od3{0%{transform:translate(0,0)}100%{transform:translate(-50px,60px)}}
+
+/* NAVBAR */
+.navbar{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 2.5rem;height:64px;background:rgba(4,5,13,0.7);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
+.nav-brand{display:flex;align-items:center;gap:6px;text-decoration:none;}
+.nav-brand-text{font-family:'Syne',sans-serif;font-weight:800;font-size:17px;color:var(--text);}
+.nav-logo-wrap{position:relative;display:inline-block;width:52px;height:52px;flex-shrink:0;}
+.nav-logo-inner{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.52);transform-origin:center center;width:100px;height:100px;}
+.logo-glow-nav{position:absolute;inset:-20px;border-radius:50%;background:radial-gradient(circle,rgba(108,99,255,0.25),transparent 70%);opacity:0.6;pointer-events:none;animation:haloBreath 3s ease-in-out infinite;}
+@keyframes haloBreath{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(1.15);opacity:0.9}}
+.logo-svg-wrap{position:relative;width:100px;height:100px;display:flex;align-items:center;justify-content:center;}
+.logo-ring{position:absolute;border-radius:50%;border:1.5px solid transparent;}
+.lr1{inset:0;border-color:rgba(108,99,255,0.7) transparent transparent transparent;animation:spin 3.5s linear infinite;}
+.lr2{inset:10px;border-color:transparent rgba(0,210,255,0.6) transparent transparent;animation:spin 5s linear infinite reverse;}
+.lr3{inset:20px;border-color:rgba(67,233,123,0.5) transparent transparent transparent;animation:spin 8s linear infinite;}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.logo-core-circle{position:absolute;inset:28px;border-radius:50%;background:linear-gradient(135deg,#1a1040,#0a2040);border:2px solid rgba(108,99,255,0.5);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px rgba(108,99,255,0.2),0 0 30px rgba(108,99,255,0.5),0 0 60px rgba(108,99,255,0.2),inset 0 1px 0 rgba(255,255,255,0.15);}
+.logo-icon-svg{width:26px;height:26px;position:relative;z-index:1;}
+.logo-orbit-dot{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--accent3);box-shadow:0 0 12px var(--accent3);top:50%;left:0;transform-origin:50px 0;animation:orbitDot 4s linear infinite;}
+@keyframes orbitDot{0%{transform:translateY(-50%) rotate(0deg) translateX(46px) rotate(0deg);}100%{transform:translateY(-50%) rotate(360deg) translateX(46px) rotate(-360deg);}}
+.logo-orbit-dot2{position:absolute;width:6px;height:6px;border-radius:50%;background:var(--accent2);box-shadow:0 0 10px var(--accent2);top:50%;left:0;transform-origin:50px 0;animation:orbitDot2 6s linear infinite reverse;}
+@keyframes orbitDot2{0%{transform:translateY(-50%) rotate(0deg) translateX(46px) rotate(0deg);}100%{transform:translateY(-50%) rotate(360deg) translateX(46px) rotate(-360deg);}}
+.nav-links{display:flex;align-items:center;gap:0.25rem;}
+.nav-link{padding:6px 14px;border-radius:8px;font-size:13px;font-weight:500;color:var(--muted);text-decoration:none;transition:all 0.2s;}
+.nav-link:hover{color:var(--text);background:rgba(255,255,255,0.04);}
+.nav-link.active{color:var(--text);background:rgba(108,99,255,0.15);border:1px solid rgba(108,99,255,0.3);}
+.nav-right{display:flex;align-items:center;gap:10px;}
+.nav-avatar{width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid rgba(108,99,255,0.4);flex-shrink:0;}
+.nav-avatar-initial{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent4));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:white;border:2px solid rgba(108,99,255,0.4);flex-shrink:0;text-decoration:none;}
+.nav-logout-btn{padding:7px 18px;border-radius:100px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;background:transparent;border:1px solid rgba(255,107,107,0.35);color:rgba(255,150,150,0.8);cursor:pointer;transition:all 0.2s;text-decoration:none;}
+.nav-logout-btn:hover{background:rgba(255,107,107,0.12);border-color:var(--accent2);color:#fff;}
+
+/* PAGE */
+.page-wrap{position:relative;z-index:1;max-width:700px;margin:0 auto;padding:110px 1.5rem 4rem;display:flex;flex-direction:column;align-items:center;gap:1.5rem;}
+
+/* LOADING */
+#page-loading{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;align-items:center;justify-content:center;transition:opacity 0.4s;}
+.loading-ring{width:40px;height:40px;border:3px solid rgba(108,99,255,0.2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;}
+
+/* EXPIRED / ERROR STATES */
+#state-expired,#state-error{display:none;text-align:center;padding:2.5rem 1.5rem;}
+#state-expired h2,#state-error h2{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;margin-bottom:0.75rem;}
+#state-expired p,#state-error p{color:var(--muted);font-size:15px;margin-bottom:1.5rem;}
+
+/* MAIN CHALLENGE CARD */
+#state-challenge{display:none;width:100%;}
+.challenge-hero{background:linear-gradient(135deg,rgba(108,99,255,0.12),rgba(0,210,255,0.06));border:1.5px solid rgba(108,99,255,0.35);border-radius:24px;padding:2.5rem 2rem;text-align:center;margin-bottom:1.25rem;}
+.challenge-trophy{font-size:3rem;margin-bottom:0.75rem;}
+.challenge-headline{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;margin-bottom:0.4rem;line-height:1.2;}
+.challenge-subline{color:var(--muted);font-size:15px;margin-bottom:2rem;line-height:1.6;}
+.challenger-fsi-big{font-family:'Syne',sans-serif;font-size:5.5rem;font-weight:800;line-height:1;background:linear-gradient(135deg,var(--accent),var(--accent4));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.challenger-fsi-label{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;margin-top:0.3rem;}
+.cta-survey-btn{display:inline-flex;align-items:center;gap:8px;margin-top:2rem;padding:14px 32px;background:linear-gradient(135deg,var(--accent),#a78bfa);border:none;border-radius:14px;color:#fff;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;cursor:pointer;text-decoration:none;transition:opacity 0.2s,transform 0.15s;}
+.cta-survey-btn:hover{opacity:0.88;transform:translateY(-2px);}
+
+/* COMPARISON */
+.comparison-wrap{width:100%;background:rgba(10,12,26,0.8);border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:1.75rem 1.5rem;text-align:center;}
+.comparison-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:1.5rem;}
+.comparison-grid{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:1rem;}
+.comp-side{text-align:center;}
+.comp-name{font-size:13px;color:var(--muted);margin-bottom:0.4rem;font-weight:500;}
+.comp-score{font-family:'Syne',sans-serif;font-size:3.2rem;font-weight:800;line-height:1;}
+.comp-score.score-accent{background:linear-gradient(135deg,var(--accent),var(--accent4));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.comp-score.score-green{background:linear-gradient(135deg,var(--accent3),#38f9d7);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.comp-score.score-red{background:linear-gradient(135deg,var(--accent2),#ff8e53);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.comp-sublabel{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-top:4px;}
+.vs-text{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800;color:rgba(255,255,255,0.2);}
+.winner-banner{margin-top:1.5rem;padding:1rem 1.5rem;border-radius:14px;font-family:'Syne',sans-serif;font-size:16px;font-weight:700;}
+.winner-banner.you-win{background:linear-gradient(135deg,rgba(67,233,123,0.15),rgba(56,249,215,0.08));border:1px solid rgba(67,233,123,0.3);color:var(--accent3);}
+.winner-banner.they-win{background:linear-gradient(135deg,rgba(255,107,107,0.12),rgba(255,142,83,0.06));border:1px solid rgba(255,107,107,0.25);color:var(--accent2);}
+.winner-banner.tie{background:linear-gradient(135deg,rgba(108,99,255,0.12),rgba(0,210,255,0.06));border:1px solid rgba(108,99,255,0.25);color:var(--accent);}
+
+/* RESPONDER NAME */
+.responder-name-wrap{width:100%;background:rgba(10,12,26,0.8);border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:1.5rem;}
+.responder-name-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:0.75rem;}
+.responder-name-input{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(108,99,255,0.3);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color 0.2s;}
+.responder-name-input:focus{border-color:rgba(108,99,255,0.6);}
+.responder-name-note{font-size:12px;color:var(--muted);margin-top:6px;}
+
+.btn-primary{display:inline-flex;align-items:center;padding:12px 28px;background:linear-gradient(135deg,var(--accent),#a78bfa);border:none;border-radius:12px;color:#fff;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;cursor:pointer;transition:opacity 0.2s,transform 0.15s;text-decoration:none;}
+.btn-primary:hover{opacity:0.88;transform:translateY(-1px);}
+.btn-secondary{display:inline-flex;align-items:center;padding:12px 28px;background:transparent;border:1px solid rgba(108,99,255,0.35);border-radius:12px;color:var(--muted);font-family:'Syne',sans-serif;font-weight:600;font-size:14px;cursor:pointer;transition:all 0.2s;text-decoration:none;}
+.btn-secondary:hover{border-color:var(--accent);color:var(--text);}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:1rem;}
+
+@media(max-width:600px){
+  .navbar{padding:0 1rem;}
+  .nav-links{display:none;}
+  .comparison-grid{gap:0.5rem;}
+  .comp-score{font-size:2.5rem;}
+  .challenger-fsi-big{font-size:4rem;}
+}
+</style>
+</head>
+<body>
+
+<canvas id="star-canvas"></canvas>
+<div class="grid-overlay"></div>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <a class="nav-brand" href="/">
+    <div class="nav-logo-wrap">
+      <div class="nav-logo-inner">
+        <div class="logo-svg-wrap">
+          <div class="logo-glow-nav"></div>
+          <div class="logo-ring lr1"></div>
+          <div class="logo-ring lr2"></div>
+          <div class="logo-ring lr3"></div>
+          <div class="logo-core-circle">
+            <svg class="logo-icon-svg" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="3" fill="#6C63FF"/>
+              <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2z" stroke="#6C63FF" stroke-width="1.5" fill="none" opacity="0.4"/>
+              <path d="M12 6v2M12 16v2M6 12H4M20 12h-2" stroke="#00D2FF" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="logo-orbit-dot"></div>
+          <div class="logo-orbit-dot2"></div>
+        </div>
+      </div>
+    </div>
+    <span class="nav-brand-text">ScrollBye</span>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link" href="/dashboard">Dashboard</a>
+    <a class="nav-link" href="/survey">Take Survey</a>
+  </div>
+  <div class="nav-right" id="nav-right">
+    <a class="btn-secondary" href="/survey" style="padding:7px 16px;font-size:13px;">Take Survey →</a>
+  </div>
+</nav>
+
+<!-- LOADING -->
+<div id="page-loading">
+  <div class="loading-ring"></div>
+</div>
+
+<div class="page-wrap">
+
+  <!-- EXPIRED -->
+  <div id="state-expired">
+    <h2>⏳ Challenge Expired</h2>
+    <p>This challenge link has expired. Challenges are valid for 7 days.</p>
+    <a class="cta-survey-btn" href="/survey">Take Your Own Survey →</a>
+  </div>
+
+  <!-- ERROR -->
+  <div id="state-error">
+    <h2>🔍 Challenge Not Found</h2>
+    <p>This challenge link is invalid or has already been removed.</p>
+    <a class="cta-survey-btn" href="/survey">Take Your Own Survey →</a>
+  </div>
+
+  <!-- MAIN CHALLENGE -->
+  <div id="state-challenge">
+
+    <!-- HERO CARD -->
+    <div class="challenge-hero">
+      <div class="challenge-trophy">🏆</div>
+      <div class="challenge-headline" id="challenge-headline">Loading challenge…</div>
+      <p class="challenge-subline" id="challenge-subline"></p>
+      <div class="challenger-fsi-big" id="challenger-fsi-big">—</div>
+      <div class="challenger-fsi-label">Focus Score Index</div>
+      <a class="cta-survey-btn" href="/survey" id="take-survey-btn">Take the Survey ⚡</a>
+    </div>
+
+    <!-- COMPARISON (shown after someone has responded) -->
+    <div class="comparison-wrap" id="comparison-wrap" style="display:none">
+      <div class="comparison-title">📊 Head-to-Head</div>
+      <div class="comparison-grid">
+        <div class="comp-side">
+          <div class="comp-name" id="comp-challenger-name">Challenger</div>
+          <div class="comp-score score-accent" id="comp-challenger-fsi">—</div>
+          <div class="comp-sublabel">FSI</div>
+        </div>
+        <div class="vs-text">VS</div>
+        <div class="comp-side">
+          <div class="comp-name" id="comp-responder-name">You</div>
+          <div class="comp-score" id="comp-responder-fsi">—</div>
+          <div class="comp-sublabel">FSI</div>
+        </div>
+      </div>
+      <div class="winner-banner" id="winner-banner"></div>
+      <div class="btn-row">
+        <a class="btn-primary" href="/survey">Beat my own score →</a>
+        <a class="btn-secondary" href="/results">View my results</a>
+      </div>
+    </div>
+
+    <!-- RESPONDER NAME (shown on fresh challenge, before survey) -->
+    <div class="responder-name-wrap" id="responder-name-wrap">
+      <div class="responder-name-title">Your name for the results board</div>
+      <input class="responder-name-input" id="responder-name-input" type="text" maxlength="40" placeholder="Enter your name (optional)">
+      <p class="responder-name-note">This will be shown alongside your score if you beat the challenge.</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- Stars canvas -->
+<script>
+(function(){
+  var c=document.getElementById('star-canvas');
+  if(!c)return;
+  var ctx=c.getContext('2d'),W=0,H=0,stars=[];
+  function resize(){W=c.width=window.innerWidth;H=c.height=window.innerHeight;}
+  function mkStar(){return{x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.2+0.2,a:Math.random(),da:(Math.random()-0.5)*0.004+0.001};}
+  window.addEventListener('resize',function(){resize();stars=[];for(var i=0;i<180;i++)stars.push(mkStar());});
+  resize();for(var i=0;i<180;i++)stars.push(mkStar());
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    for(var i=0;i<stars.length;i++){
+      var s=stars[i];s.a+=s.da;if(s.a<=0||s.a>=1)s.da*=-1;
+      ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fillStyle='rgba(220,215,255,'+s.a.toFixed(2)+')';ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  var token = location.pathname.split('/challenge/')[1];
+  var loading = document.getElementById('page-loading');
+
+  function hideLoading(){
+    loading.style.opacity='0';
+    setTimeout(function(){loading.style.display='none';},350);
+  }
+
+  if(!token){
+    hideLoading();
+    document.getElementById('state-error').style.display='block';
+    return;
+  }
+
+  // Fetch nav state
+  fetch('/api/me').then(function(r){return r.json();}).then(function(me){
+    var navRight = document.getElementById('nav-right');
+    if(me.loggedIn){
+      var av = me.avatar
+        ? '<a href="/profile"><img class="nav-avatar" src="'+me.avatar+'" alt="avatar"></a>'
+        : '<a href="/profile" class="nav-avatar-initial">'+me.username[0].toUpperCase()+'</a>';
+      navRight.innerHTML = av + '<a class="nav-logout-btn" href="/auth/logout">Logout</a>';
+    }
+  }).catch(function(){});
+
+  // Fetch challenge data
+  fetch('/api/challenge/' + token)
+    .then(function(r){
+      if(!r.ok) throw new Error('not_found');
+      return r.json();
+    })
+    .then(function(data){
+      hideLoading();
+
+      if(data.expired){
+        document.getElementById('state-expired').style.display='block';
+        return;
+      }
+
+      document.getElementById('state-challenge').style.display='block';
+
+      // Populate hero
+      document.getElementById('challenge-headline').textContent = data.challengerName + ' scored ' + data.challengerFSI + '/100 on their Focus Score.';
+      document.getElementById('challenge-subline').textContent = 'Can you beat it? Take the survey and find out.';
+      document.getElementById('challenger-fsi-big').textContent = data.challengerFSI;
+
+      // Pass challenge context via URL params — no client-side storage needed
+      var surveyBtn = document.getElementById('take-survey-btn');
+      surveyBtn.addEventListener('click', function(e){
+        e.preventDefault();
+        var name = (document.getElementById('responder-name-input').value||'').trim();
+        var url = '/survey?challenge=' + encodeURIComponent(token);
+        if(name) url += '&responder=' + encodeURIComponent(name);
+        location.href = url;
+      });
+
+      // Check if there is already a response to show
+      if(data.responses && data.responses.length > 0){
+        var latest = data.responses[data.responses.length - 1];
+        var won = latest.fsi > data.challengerFSI;
+        var tied = latest.fsi === data.challengerFSI;
+        showComparison(data.challengerName, data.challengerFSI, latest.responderName, latest.fsi, won, tied);
+      }
+    })
+    .catch(function(){
+      hideLoading();
+      document.getElementById('state-error').style.display='block';
+    });
+
+  function showComparison(challengerName, challengerFSI, responderName, responderFSI, won, tied){
+    document.getElementById('responder-name-wrap').style.display = 'none';
+    document.getElementById('comp-challenger-name').textContent = challengerName;
+    document.getElementById('comp-challenger-fsi').textContent = challengerFSI;
+    document.getElementById('comp-responder-name').textContent = responderName || 'You';
+    var rEl = document.getElementById('comp-responder-fsi');
+    rEl.textContent = responderFSI;
+    rEl.className = 'comp-score ' + (tied ? 'score-accent' : (won ? 'score-green' : 'score-red'));
+    var banner = document.getElementById('winner-banner');
+    if(tied){
+      banner.className = 'winner-banner tie';
+      banner.innerHTML = "🤝 It's a tie! Both scored " + challengerFSI + "/100";
+    } else if(won){
+      banner.className = 'winner-banner you-win';
+      banner.innerHTML = '🏆 ' + (responderName || 'You') + ' beat the challenge! ' + responderFSI + ' vs ' + challengerFSI;
+    } else {
+      banner.className = 'winner-banner they-win';
+      banner.innerHTML = '💪 So close! ' + challengerName + ' wins this round. Try again?';
+    }
+    document.getElementById('comparison-wrap').style.display = 'block';
+    // Hide take survey btn and replace with retry
+    var surveyBtn = document.getElementById('take-survey-btn');
+    surveyBtn.textContent = 'Try Again →';
+  }
+})();
+</script>
+</body>
+</html>

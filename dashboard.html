@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ScrollBye — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root{
+  --bg:#04050d;--surface:#0a0c1a;--surface2:#111326;
+  --border:rgba(255,255,255,0.06);--border-hover:rgba(108,99,255,0.4);
+  --accent:#6C63FF;--accent2:#FF6B6B;--accent3:#43E97B;--accent4:#00D2FF;
+  --text:#EEEEFF;--muted:rgba(220,220,255,0.42);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden;}
+
+/* BACKGROUND */
+#star-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.55;}
+.grid-overlay{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(rgba(108,99,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(108,99,255,0.025) 1px,transparent 1px);
+  background-size:80px 80px;}
+.orb{position:fixed;border-radius:50%;pointer-events:none;z-index:0;filter:blur(120px);}
+.orb1{width:700px;height:700px;background:radial-gradient(circle,rgba(108,99,255,0.16),transparent 70%);top:-250px;left:-250px;animation:od1 22s ease-in-out infinite alternate;}
+.orb2{width:500px;height:500px;background:radial-gradient(circle,rgba(255,107,107,0.11),transparent 70%);bottom:-120px;right:-120px;animation:od2 28s ease-in-out infinite alternate;}
+.orb3{width:400px;height:400px;background:radial-gradient(circle,rgba(0,210,255,0.09),transparent 70%);top:45%;left:55%;animation:od3 20s ease-in-out infinite alternate;}
+@keyframes od1{0%{transform:translate(0,0)}100%{transform:translate(70px,90px)}}
+@keyframes od2{0%{transform:translate(0,0)}100%{transform:translate(-60px,-70px)}}
+@keyframes od3{0%{transform:translate(0,0)}100%{transform:translate(-50px,60px)}}
+
+/* LOGO */
+.nav-logo-wrap{position:relative;display:inline-block;width:52px;height:52px;flex-shrink:0;}
+.nav-logo-inner{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.52);transform-origin:center center;width:100px;height:100px;}
+.logo-glow-nav{position:absolute;inset:-20px;border-radius:50%;background:radial-gradient(circle,rgba(108,99,255,0.25),transparent 70%);opacity:0.6;pointer-events:none;animation:haloBreath 3s ease-in-out infinite;}
+@keyframes haloBreath{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(1.15);opacity:0.9}}
+.logo-svg-wrap{position:relative;width:100px;height:100px;display:flex;align-items:center;justify-content:center;}
+.logo-ring{position:absolute;border-radius:50%;border:1.5px solid transparent;}
+.lr1{inset:0;border-color:rgba(108,99,255,0.7) transparent transparent transparent;animation:spin 3.5s linear infinite;}
+.lr2{inset:10px;border-color:transparent rgba(0,210,255,0.6) transparent transparent;animation:spin 5s linear infinite reverse;}
+.lr3{inset:20px;border-color:rgba(67,233,123,0.5) transparent transparent transparent;animation:spin 8s linear infinite;}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.logo-core-circle{position:absolute;inset:28px;border-radius:50%;background:linear-gradient(135deg,#1a1040,#0a2040);border:2px solid rgba(108,99,255,0.5);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px rgba(108,99,255,0.2),0 0 30px rgba(108,99,255,0.5),0 0 60px rgba(108,99,255,0.2),inset 0 1px 0 rgba(255,255,255,0.15);animation:corePulse 2.5s ease-in-out infinite;overflow:hidden;}
+@keyframes corePulse{0%,100%{box-shadow:0 0 0 1px rgba(108,99,255,0.2),0 0 25px rgba(108,99,255,0.5),0 0 50px rgba(108,99,255,0.2),inset 0 1px 0 rgba(255,255,255,0.1);}50%{box-shadow:0 0 0 2px rgba(108,99,255,0.4),0 0 50px rgba(108,99,255,0.8),0 0 100px rgba(108,99,255,0.4),inset 0 1px 0 rgba(255,255,255,0.2);}}
+.logo-icon-svg{width:26px;height:26px;position:relative;z-index:1;}
+.logo-core-circle::after{content:'';position:absolute;top:-100%;left:0;right:0;height:100%;background:linear-gradient(transparent,rgba(108,99,255,0.15),transparent);animation:scanline 3s ease-in-out infinite;}
+@keyframes scanline{0%{top:-100%}100%{top:200%}}
+.logo-orbit-dot{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--accent3);box-shadow:0 0 12px var(--accent3);top:50%;left:0;transform-origin:50px 0;animation:orbitDot 4s linear infinite;}
+@keyframes orbitDot{0%{transform:translateY(-50%) rotate(0deg) translateX(46px) rotate(0deg);}100%{transform:translateY(-50%) rotate(360deg) translateX(46px) rotate(-360deg);}}
+.logo-orbit-dot2{position:absolute;width:6px;height:6px;border-radius:50%;background:var(--accent2);box-shadow:0 0 10px var(--accent2);top:50%;left:0;transform-origin:50px 0;animation:orbitDot2 6s linear infinite reverse;}
+@keyframes orbitDot2{0%{transform:translateY(-50%) rotate(0deg) translateX(46px) rotate(0deg);}100%{transform:translateY(-50%) rotate(360deg) translateX(46px) rotate(-360deg);}}
+
+/* NAVBAR */
+.navbar{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 2.5rem;height:64px;
+  background:rgba(4,5,13,0.7);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+}
+.nav-brand{display:flex;align-items:center;gap:6px;text-decoration:none;}
+.nav-brand-text{font-family:'Syne',sans-serif;font-weight:800;font-size:17px;color:var(--text);}
+.nav-links{display:flex;align-items:center;gap:0.25rem;}
+.nav-link{
+  padding:6px 14px;border-radius:8px;font-size:13px;font-weight:500;
+  color:var(--muted);text-decoration:none;transition:all 0.2s;
+}
+.nav-link:hover{color:var(--text);background:rgba(255,255,255,0.04);}
+.nav-link.active{color:var(--text);background:rgba(108,99,255,0.15);border:1px solid rgba(108,99,255,0.3);}
+.nav-right{display:flex;align-items:center;gap:10px;}
+.nav-username{font-family:'Syne',sans-serif;font-size:13px;font-weight:600;color:var(--muted);letter-spacing:0.01em;}
+.nav-avatar{width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid rgba(108,99,255,0.4);flex-shrink:0;}
+.nav-avatar-initial{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent4));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:white;border:2px solid rgba(108,99,255,0.4);flex-shrink:0;cursor:pointer;text-decoration:none;}
+.nav-logout-btn{
+  padding:7px 18px;border-radius:100px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;
+  background:transparent;border:1px solid rgba(255,107,107,0.35);color:rgba(255,150,150,0.8);
+  cursor:pointer;transition:all 0.2s;text-decoration:none;
+}
+.nav-logout-btn:hover{background:rgba(255,107,107,0.12);border-color:var(--accent2);color:#fff;}
+
+/* PAGE LAYOUT */
+.page-wrap{
+  position:relative;z-index:1;
+  max-width:1100px;margin:0 auto;padding:100px 2rem 4rem;
+}
+
+/* SECTION LABEL */
+.section-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.15em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:1.25rem;
+}
+.eyebrow-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);}
+
+/* CARD BASE */
+.card{
+  background:rgba(10,12,26,0.65);
+  border:1px solid var(--border);
+  border-radius:20px;
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  padding:1.5rem;
+  transition:border-color 0.25s;
+}
+.card:hover{border-color:rgba(108,99,255,0.3);}
+
+/* ═══ NEW USER STATE ═══ */
+#state-new{display:none;}
+.welcome-hero{text-align:center;padding:3rem 1rem 2rem;}
+.welcome-name{
+  font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(2rem,5vw,3.5rem);
+  background:linear-gradient(135deg,#fff 0%,rgba(180,175,255,0.85) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  line-height:1.1;margin-bottom:0.75rem;
+}
+.welcome-sub{font-size:1.05rem;color:var(--muted);margin-bottom:2rem;max-width:520px;margin-left:auto;margin-right:auto;}
+
+.level-badge-new{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:10px 22px;border-radius:100px;
+  background:rgba(108,99,255,0.12);border:1px solid rgba(108,99,255,0.3);
+  font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:rgba(180,175,255,0.95);
+  margin-bottom:2rem;
+}
+.level-pip{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent);}
+
+/* XP bar (new user) */
+.xp-bar-wrap{max-width:400px;margin:0 auto 2.5rem;}
+.xp-bar-label{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px;}
+.xp-bar-track{height:8px;border-radius:100px;background:rgba(255,255,255,0.06);overflow:hidden;}
+.xp-bar-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--accent),var(--accent4));width:0%;transition:width 0.8s ease;}
+
+.cta-log-btn{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:16px 40px;border-radius:100px;
+  font-family:'Syne',sans-serif;font-size:16px;font-weight:800;
+  background:linear-gradient(135deg,var(--accent),var(--accent4));
+  color:#fff;text-decoration:none;border:none;cursor:pointer;
+  box-shadow:0 0 40px rgba(108,99,255,0.5),0 8px 32px rgba(108,99,255,0.35);
+  transition:all 0.25s;animation:ctaPulse 2.5s ease-in-out infinite;
+}
+.cta-log-btn:hover{transform:translateY(-3px);box-shadow:0 0 60px rgba(108,99,255,0.7),0 12px 40px rgba(108,99,255,0.5);}
+@keyframes ctaPulse{0%,100%{box-shadow:0 0 40px rgba(108,99,255,0.5),0 8px 32px rgba(108,99,255,0.35);}50%{box-shadow:0 0 70px rgba(108,99,255,0.75),0 12px 48px rgba(0,210,255,0.4);}}
+
+/* Locked preview cards grid */
+.locked-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:1.25rem;margin-top:3rem;
+}
+.locked-card{
+  background:rgba(10,12,26,0.55);border:1px solid var(--border);border-radius:20px;
+  padding:1.6rem 1.5rem;text-align:center;position:relative;overflow:hidden;
+}
+.locked-card::after{
+  content:'';position:absolute;inset:0;z-index:1;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  background:rgba(4,5,13,0.55);border-radius:20px;
+}
+.locked-icon{font-size:2rem;margin-bottom:0.5rem;}
+.locked-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--muted);}
+.lock-overlay{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;}
+.lock-icon{font-size:1.6rem;opacity:0.6;}
+.lock-text{font-size:12px;color:var(--muted);font-weight:500;}
+
+/* ═══ RETURNING USER STATE ═══ */
+#state-returning{display:none;}
+.dash-header{margin-bottom:2.5rem;}
+.dash-greeting{font-family:'Syne',sans-serif;font-size:clamp(1.5rem,3.5vw,2.4rem);font-weight:800;color:var(--text);line-height:1.2;}
+.dash-date{font-size:13px;color:var(--muted);margin-top:4px;}
+
+/* Stat row */
+.stat-row{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:1.25rem;margin-bottom:2rem;
+}
+.stat-card{background:rgba(10,12,26,0.65);border:1px solid var(--border);border-radius:18px;padding:1.4rem 1.25rem;position:relative;overflow:hidden;transition:border-color 0.25s,transform 0.2s;}
+.stat-card:hover{border-color:rgba(108,99,255,0.3);transform:translateY(-2px);}
+.stat-label{font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;}
+.stat-value{font-family:'Syne',sans-serif;font-size:2.4rem;font-weight:800;line-height:1;margin-bottom:4px;}
+.stat-sub{font-size:12px;color:var(--muted);}
+.stat-glow{position:absolute;top:-30px;right:-30px;width:100px;height:100px;border-radius:50%;opacity:0.2;filter:blur(30px);}
+
+/* FSI color helpers */
+.fsi-green{color:var(--accent3);}
+.fsi-yellow{color:#FFB347;}
+.fsi-red{color:var(--accent2);}
+
+/* XP card */
+.xp-card{background:rgba(10,12,26,0.65);border:1px solid var(--border);border-radius:18px;padding:1.4rem 1.5rem;margin-bottom:1.25rem;transition:border-color 0.25s;}
+.xp-card:hover{border-color:rgba(108,99,255,0.3);}
+.xp-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;}
+.xp-level-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:6px 16px;border-radius:100px;
+  background:rgba(108,99,255,0.15);border:1px solid rgba(108,99,255,0.35);
+  font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:rgba(180,175,255,0.95);
+}
+.xp-total{font-family:'Syne',sans-serif;font-size:13px;font-weight:600;color:var(--muted);}
+.xp-bar-track2{height:10px;border-radius:100px;background:rgba(255,255,255,0.06);overflow:hidden;margin-bottom:6px;}
+.xp-bar-fill2{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--accent),var(--accent4));transition:width 1s ease;}
+.xp-bar-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);}
+
+/* Chart section */
+.chart-card{background:rgba(10,12,26,0.65);border:1px solid var(--border);border-radius:20px;padding:1.5rem;margin-bottom:1.25rem;transition:border-color 0.25s;}
+.chart-card:hover{border-color:rgba(108,99,255,0.3);}
+.chart-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text);margin-bottom:1rem;}
+.chart-wrap{position:relative;height:220px;}
+
+/* Grid row */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem;}
+@media(max-width:700px){.two-col{grid-template-columns:1fr;}.stat-row{grid-template-columns:1fr 1fr;}}
+
+/* Insights */
+.insight-pill{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:1rem 1.2rem;border-radius:14px;
+  background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);
+  margin-bottom:0.75rem;transition:border-color 0.2s;
+}
+.insight-pill:hover{border-color:rgba(108,99,255,0.25);}
+.insight-icon{font-size:1.2rem;flex-shrink:0;margin-top:2px;}
+.insight-text{font-size:13px;color:rgba(220,220,255,0.8);line-height:1.5;}
+.insight-text strong{color:var(--text);}
+
+/* Leaderboard rank */
+.rank-card{background:rgba(10,12,26,0.65);border:1px solid var(--border);border-radius:18px;padding:1.4rem 1.5rem;text-align:center;transition:border-color 0.25s;}
+.rank-card:hover{border-color:rgba(108,99,255,0.3);}
+.rank-number{
+  font-family:'Syne',sans-serif;font-size:3.5rem;font-weight:800;
+  background:linear-gradient(135deg,var(--accent),var(--accent4));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  line-height:1;margin-bottom:4px;
+}
+.rank-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;}
+.rank-sub{font-size:12px;color:var(--muted);margin-top:6px;}
+
+/* Loading spinner */
+#dash-loading{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
+.spinner{width:44px;height:44px;border-radius:50%;border:3px solid rgba(108,99,255,0.2);border-top-color:var(--accent);animation:spin 0.8s linear infinite;}
+.loading-text{font-family:'Syne',sans-serif;font-size:14px;color:var(--muted);}
+
+/* ── LEADERBOARD TABLE ── */
+.lb-tab-pills{display:flex;gap:6px;flex-wrap:wrap;}
+.lb-tab{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:100px;padding:6px 14px;color:var(--muted);font-family:'Syne',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;}
+.lb-tab.active{background:linear-gradient(135deg,var(--accent),var(--accent4));border-color:transparent;color:#fff;}
+.lb-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:12px;transition:background 0.15s;}
+.lb-row:hover{background:rgba(255,255,255,0.03);}
+.lb-row.lb-me{background:rgba(108,99,255,0.08);border-left:3px solid var(--accent);padding-left:7px;}
+.lb-rank{width:30px;text-align:center;flex-shrink:0;font-size:18px;line-height:1;}
+.lb-rank-num{font-family:'Syne',sans-serif;font-size:12px;font-weight:800;color:var(--muted);}
+.lb-avatar-sm{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;color:#fff;flex-shrink:0;}
+.lb-name-wrap{flex:1;min-width:0;}
+.lb-display-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.lb-school{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.lb-fsi-val{font-family:'Syne',sans-serif;font-weight:800;font-size:15px;}
+.lb-fsi-green{color:var(--accent3);}.lb-fsi-amber{color:#F59E0B;}.lb-fsi-red{color:var(--accent2);}
+.lb-xp-wrap{text-align:right;}
+.lb-xp-val{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--accent);}
+.lb-streak-sm{font-size:11px;color:var(--muted);}
+.lb-skel{height:40px;border-radius:12px;background:linear-gradient(90deg,rgba(255,255,255,0.04) 25%,rgba(255,255,255,0.08) 50%,rgba(255,255,255,0.04) 75%);background-size:200% 100%;animation:lb-shimmer 1.4s infinite;margin-bottom:8px;}
+@keyframes lb-shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+
+</style>
+</head>
+<body>
+
+<canvas id="star-canvas"></canvas>
+<div class="grid-overlay"></div>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+
+<!-- Loading overlay -->
+<div id="dash-loading">
+  <div class="spinner"></div>
+  <span class="loading-text">Loading your dashboard…</span>
+</div>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <a class="nav-brand" href="/">
+    <div class="nav-logo-wrap">
+      <div class="nav-logo-inner">
+        <div class="logo-glow-nav"></div>
+        <div class="logo-svg-wrap">
+          <div class="logo-ring lr1"></div>
+          <div class="logo-ring lr2"></div>
+          <div class="logo-ring lr3"></div>
+          <div class="logo-core-circle">
+            <svg class="logo-icon-svg" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="3" fill="rgba(200,195,255,0.9)"/>
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10" stroke="rgba(108,99,255,0.8)" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M12 6v6l4 2" stroke="rgba(0,210,255,0.8)" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="logo-orbit-dot"></div>
+          <div class="logo-orbit-dot2"></div>
+        </div>
+      </div>
+    </div>
+    <span class="nav-brand-text">ScrollBye</span>
+  </a>
+
+  <div class="nav-links">
+    <a class="nav-link active" href="/dashboard">Dashboard</a>
+    <a class="nav-link" href="/profile">Profile</a>
+    <a class="nav-link" href="/survey">Take Survey</a>
+  </div>
+
+  <div class="nav-right">
+    <a href="/profile" id="nav-avatar-wrap"></a>
+    <a class="nav-logout-btn" href="/auth/logout">Logout</a>
+  </div>
+</nav>
+
+<!-- ═══ NEW USER STATE ═══ -->
+<div id="state-new">
+  <div class="page-wrap">
+    <div class="welcome-hero">
+      <div class="section-eyebrow"><span class="eyebrow-dot"></span>Your Journey Starts Here</div>
+      <div class="welcome-name" id="new-welcome-name">Welcome, Researcher!</div>
+      <p class="welcome-sub">You haven't logged any days yet. Start your first focus log to unlock your full dashboard, XP, streaks, and leaderboard rank.</p>
+
+      <div class="level-badge-new">
+        <span class="level-pip"></span>
+        Level 1 · Dormant
+      </div>
+
+      <div class="xp-bar-wrap">
+        <div class="xp-bar-label"><span>0 XP</span><span>100 XP → Awakening</span></div>
+        <div class="xp-bar-track"><div class="xp-bar-fill" style="width:0%"></div></div>
+      </div>
+
+      <a class="cta-log-btn" href="/survey">Log Your First Day →</a>
+    </div>
+
+    <div class="locked-grid">
+      <div class="locked-card">
+        <div class="locked-icon">📊</div>
+        <div class="locked-title">Focus Score</div>
+        <div class="lock-overlay"><div class="lock-icon">🔒</div><div class="lock-text">Log a day to unlock</div></div>
+      </div>
+      <div class="locked-card">
+        <div class="locked-icon">📈</div>
+        <div class="locked-title">7-Day FSI Chart</div>
+        <div class="lock-overlay"><div class="lock-icon">🔒</div><div class="lock-text">Log a day to unlock</div></div>
+      </div>
+      <div class="locked-card">
+        <div class="locked-icon">🏆</div>
+        <div class="locked-title">Leaderboard Rank</div>
+        <div class="lock-overlay"><div class="lock-icon">🔒</div><div class="lock-text">Log a day to unlock</div></div>
+      </div>
+      <div class="locked-card">
+        <div class="locked-icon">💡</div>
+        <div class="locked-title">AI Insights</div>
+        <div class="lock-overlay"><div class="lock-icon">🔒</div><div class="lock-text">Log a day to unlock</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ RETURNING USER STATE ═══ -->
+<div id="state-returning">
+  <div class="page-wrap">
+    <div class="dash-header">
+      <div class="section-eyebrow"><span class="eyebrow-dot"></span>Your Dashboard</div>
+      <div class="dash-greeting" id="ret-greeting">Welcome back!</div>
+      <div class="dash-date" id="ret-date"></div>
+    </div>
+
+    <!-- Stat row: FSI, Streak, Total XP, Days Logged -->
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="stat-glow" style="background:var(--accent4)"></div>
+        <div class="stat-label">Latest FSI</div>
+        <div class="stat-value" id="stat-fsi">—</div>
+        <div class="stat-sub" id="stat-fsi-label">Focus Score Index</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-glow" style="background:var(--accent3)"></div>
+        <div class="stat-label">Current Streak</div>
+        <div class="stat-value" style="color:var(--accent3)" id="stat-streak">0</div>
+        <div class="stat-sub">consecutive days</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-glow" style="background:var(--accent)"></div>
+        <div class="stat-label">Total XP</div>
+        <div class="stat-value" style="color:var(--accent)" id="stat-xp">0</div>
+        <div class="stat-sub" id="stat-level-name">Dormant</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-glow" style="background:var(--accent2)"></div>
+        <div class="stat-label">Days Logged</div>
+        <div class="stat-value" style="color:rgba(220,220,255,0.9)" id="stat-days">0</div>
+        <div class="stat-sub">total entries</div>
+      </div>
+    </div>
+
+    <!-- XP Progress Bar -->
+    <div class="xp-card">
+      <div class="xp-top">
+        <div class="xp-level-badge"><span class="level-pip"></span><span id="xp-level-text">Level 1 · Dormant</span></div>
+        <span class="xp-total"><span id="xp-cur">0</span> XP</span>
+      </div>
+      <div class="xp-bar-track2"><div class="xp-bar-fill2" id="xp-bar-fill" style="width:0%"></div></div>
+      <div class="xp-bar-labels"><span id="xp-bar-min">0</span><span id="xp-bar-next">100 → Awakening</span></div>
+    </div>
+
+    <!-- Two column: Chart + Insights/Rank -->
+    <div class="two-col">
+      <!-- 7-day FSI chart -->
+      <div class="chart-card" style="min-height:280px;">
+        <div class="chart-title">7-Day Focus Score (FSI)</div>
+        <div class="chart-wrap"><canvas id="fsi-chart"></canvas></div>
+      </div>
+
+      <!-- Insights + rank -->
+      <div>
+        <div class="card" style="margin-bottom:1.25rem;">
+          <div class="chart-title" style="margin-bottom:0.9rem;">Insights</div>
+          <div id="insights-list">
+            <div class="insight-pill"><span class="insight-icon">💡</span><span class="insight-text">Log more days to generate personalized insights.</span></div>
+          </div>
+        </div>
+        <div class="rank-card">
+          <div class="stat-label" style="margin-bottom:0.5rem;">Leaderboard Rank</div>
+          <div class="rank-number" id="rank-num">#—</div>
+          <div class="rank-label">by XP</div>
+          <div class="rank-sub" id="rank-sub">Loading…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Global Leaderboard -->
+    <div class="chart-card" id="lb-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:1rem;">
+        <div>
+          <div class="chart-title" style="margin-bottom:2px;">🏆 Global Leaderboard</div>
+          <div style="font-size:12px;color:var(--muted);" id="lb-total-count">Loading…</div>
+        </div>
+        <div class="lb-tab-pills">
+          <button class="lb-tab active" id="lb-tab-fsi" onclick="switchLbTab('fsi')">🎯 Focus Score</button>
+          <button class="lb-tab" id="lb-tab-xp" onclick="switchLbTab('xp')">⚡ XP Rankings</button>
+        </div>
+      </div>
+      <div id="lb-panel-fsi">
+        <div id="lb-fsi-skel"><div class="lb-skel"></div><div class="lb-skel"></div><div class="lb-skel"></div></div>
+        <div id="lb-fsi-list" style="display:none"></div>
+        <div id="lb-fsi-err" style="display:none;color:var(--muted);font-size:13px;text-align:center;padding:1.5rem 0;">Could not load leaderboard — check your connection</div>
+      </div>
+      <div id="lb-panel-xp" style="display:none">
+        <div id="lb-xp-skel"><div class="lb-skel"></div><div class="lb-skel"></div><div class="lb-skel"></div></div>
+        <div id="lb-xp-list" style="display:none"></div>
+        <div id="lb-xp-err" style="display:none;color:var(--muted);font-size:13px;text-align:center;padding:1.5rem 0;">Could not load leaderboard — check your connection</div>
+      </div>
+    </div>
+
+    <!-- Survey CTA -->
+    <div style="text-align:center;margin-top:1.5rem;" id="log-cta-wrap">
+      <a class="cta-log-btn" href="/survey" id="log-today-btn" style="font-size:14px;padding:13px 32px;">Log Today's Focus →</a>
+    </div>
+  </div>
+</div>
+
+<!-- Stars script -->
+<script>
+(function(){
+  var c=document.getElementById('star-canvas');
+  if(!c) return;
+  var ctx=c.getContext('2d');
+  var W=0,H=0,stars=[];
+  function resize(){W=c.width=window.innerWidth;H=c.height=window.innerHeight;}
+  function mkStar(){return{x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.2+0.2,a:Math.random(),da:(Math.random()-0.5)*0.004+0.001};}
+  window.addEventListener('resize',function(){resize();stars=[];for(var i=0;i<180;i++)stars.push(mkStar());});
+  resize();for(var i=0;i<180;i++)stars.push(mkStar());
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    for(var i=0;i<stars.length;i++){
+      var s=stars[i];s.a+=s.da;if(s.a<=0||s.a>=1)s.da*=-1;
+      ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fillStyle='rgba(220,215,255,'+s.a.toFixed(2)+')';ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+</script>
+
+<!-- XP + Level data (same as scrollstop2.html) -->
+<script>
+var SB_LEVELS=[
+  {level:1,name:'Dormant',min:0},
+  {level:2,name:'Awakening',min:100},
+  {level:3,name:'Aware',min:250},
+  {level:4,name:'Focused',min:450},
+  {level:5,name:'Disciplined',min:700},
+  {level:6,name:'Sharp',min:1000},
+  {level:7,name:'Elite',min:1350},
+  {level:8,name:'Sovereign',min:1750},
+  {level:9,name:'Transcendent',min:2200},
+  {level:10,name:'ScrollBye Legend',min:2700}
+];
+function getLevelInfo(xp){
+  var info=SB_LEVELS[0];
+  for(var i=0;i<SB_LEVELS.length;i++){if(xp>=SB_LEVELS[i].min)info=SB_LEVELS[i];}
+  var next=SB_LEVELS.find(function(l){return l.min>xp;});
+  return {level:info.level,name:info.name,min:info.min,nextMin:next?next.min:null};
+}
+
+function getFsiColor(fsi){
+  if(fsi>=75) return 'var(--accent3)';
+  if(fsi>=50) return '#FFB347';
+  return 'var(--accent2)';
+}
+
+function fmt(n){return typeof n==='number'?n.toFixed(1):n;}
+
+function generateInsights(logs){
+  if(!logs||logs.length<2) return null;
+  var insights=[];
+  var sorted=logs.slice().sort(function(a,b){return a.date<b.date?-1:1;});
+  var last=sorted[sorted.length-1];
+  var prev=sorted.length>=2?sorted[sorted.length-2]:null;
+
+  // FSI trend
+  if(prev){
+    var delta=last.fsi-prev.fsi;
+    if(delta>5) insights.push({icon:'📈',text:'Your FSI <strong>improved by '+delta.toFixed(1)+'</strong> compared to yesterday — great progress!'});
+    else if(delta<-5) insights.push({icon:'📉',text:'Your FSI dropped by '+Math.abs(delta).toFixed(1)+' vs yesterday. Try reducing passive screen time.'});
+    else insights.push({icon:'➡️',text:'Your FSI held steady at <strong>'+last.fsi.toFixed(1)+'</strong>. Consistency is a win!'});
+  }
+
+  // Sleep
+  var sl=parseFloat(last.sleep)||0;
+  if(sl<6) insights.push({icon:'😴',text:'You slept only <strong>'+fmt(sl)+'h</strong> — aim for 7–9 hours to boost your FSI and XP gains.'});
+  else if(sl>=7&&sl<=9) insights.push({icon:'🌙',text:'Perfect sleep of <strong>'+fmt(sl)+'h</strong>! You earned a sleep bonus in XP.'});
+
+  // Phone checks
+  var ch=parseInt(last.checks)||0;
+  if(ch===0) insights.push({icon:'📵',text:'Zero phone checks today — incredible discipline! +30 XP bonus earned.'});
+  else if(ch>10) insights.push({icon:'📱',text:'<strong>'+ch+' phone checks</strong> today. Try keeping your phone in another room while studying.'});
+
+  // 7-day avg
+  if(logs.length>=3){
+    var avg=logs.reduce(function(s,e){return s+e.fsi;},0)/logs.length;
+    insights.push({icon:'📊',text:'Your <strong>'+logs.length+'-day FSI average</strong> is '+avg.toFixed(1)+'.'});
+  }
+
+  return insights.slice(0,3);
+}
+
+// ── LEADERBOARD ──
+function switchLbTab(tab){
+  document.getElementById('lb-tab-fsi').className='lb-tab'+(tab==='fsi'?' active':'');
+  document.getElementById('lb-tab-xp').className='lb-tab'+(tab==='xp'?' active':'');
+  document.getElementById('lb-panel-fsi').style.display=tab==='fsi'?'':'none';
+  document.getElementById('lb-panel-xp').style.display=tab==='xp'?'':'none';
+}
+function lbEsc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function lbColor(n){var c=['#6C63FF','#43E97B','#00D2FF','#FF6B6B','#FFD700','#FF9A00','#a78bfa','#38f9d7'];var s=0;for(var i=0;i<n.length;i++)s+=n.charCodeAt(i);return c[s%c.length];}
+function lbRankHtml(i){return i===0?'🥇':i===1?'🥈':i===2?'🥉':'<span class="lb-rank-num">#'+(i+1)+'</span>';}
+function renderFsiLeaderboard(lb, username){
+  var skel=document.getElementById('lb-fsi-skel');if(skel)skel.style.display='none';
+  var list=document.getElementById('lb-fsi-list');if(!list)return;
+  list.innerHTML='';
+  lb.slice(0,10).forEach(function(e,i){
+    var isMe=e.displayName===username;
+    var fsiCls=e.fsi>=75?'lb-fsi-val lb-fsi-green':e.fsi>=50?'lb-fsi-val lb-fsi-amber':'lb-fsi-val lb-fsi-red';
+    var school=e.school?(e.school.slice(0,20)+(e.school.length>20?'…':'')):'';
+    var row=document.createElement('div');
+    row.className='lb-row'+(isMe?' lb-me':'');
+    row.innerHTML='<div class="lb-rank">'+lbRankHtml(i)+'</div>'+
+      '<div class="lb-avatar-sm" style="background:'+lbColor(e.displayName)+'">'+lbEsc(e.displayName[0].toUpperCase())+'</div>'+
+      '<div class="lb-name-wrap"><div class="lb-display-name">'+lbEsc(e.displayName)+(isMe?' <span style="font-size:10px;color:var(--accent)">(you)</span>':'')+'</div>'+
+      (school?'<div class="lb-school">'+lbEsc(school)+'</div>':'')+'</div>'+
+      '<span class="'+fsiCls+'">'+e.fsi+'</span>';
+    list.appendChild(row);
+  });
+  list.style.display='';
+}
+function loadXpLeaderboard(username){
+  fetch('/api/xp-leaderboard').then(function(r){return r.json();}).then(function(lb){
+    var skel=document.getElementById('lb-xp-skel');if(skel)skel.style.display='none';
+    var list=document.getElementById('lb-xp-list');if(!list)return;
+    list.innerHTML='';
+    lb.slice(0,10).forEach(function(e,i){
+      var isMe=e.displayName===username;
+      var row=document.createElement('div');
+      row.className='lb-row'+(isMe?' lb-me':'');
+      row.innerHTML='<div class="lb-rank">'+lbRankHtml(i)+'</div>'+
+        '<div class="lb-avatar-sm" style="background:'+lbColor(e.displayName)+'">'+lbEsc(e.displayName[0].toUpperCase())+'</div>'+
+        '<div class="lb-name-wrap"><div class="lb-display-name">'+lbEsc(e.displayName)+(isMe?' <span style="font-size:10px;color:var(--accent)">(you)</span>':'')+'</div>'+
+        '<div class="lb-school"><span class="xp-level-badge" style="font-size:10px;padding:2px 8px;">'+lbEsc(e.levelName||'Dormant')+'</span></div></div>'+
+        '<div class="lb-xp-wrap"><div class="lb-xp-val">'+(e.xp||0)+' XP</div>'+
+        (e.streak?'<div class="lb-streak-sm">🔥 '+e.streak+' day streak</div>':'')+'</div>';
+      list.appendChild(row);
+    });
+    list.style.display='';
+  }).catch(function(){
+    var skel=document.getElementById('lb-xp-skel');if(skel)skel.style.display='none';
+    var err=document.getElementById('lb-xp-err');if(err)err.style.display='';
+  });
+}
+
+// Main dashboard init
+(function(){
+  var loading=document.getElementById('dash-loading');
+  Promise.all([fetch('/api/me'),fetch('/api/my-progress'),fetch('/api/my-submissions')])
+    .then(function(rs){return Promise.all(rs.map(function(r){return r.json();}));})
+    .then(function(results){
+      var me=results[0];var prog=results[1];var subsData=results[2];
+      if(!me.loggedIn){location.href='/login?next=/dashboard';return;}
+      // Render avatar or initial circle in nav
+      var navAw=document.getElementById('nav-avatar-wrap');
+      if(navAw){navAw.innerHTML=me.avatar?'<img class="nav-avatar" src="'+me.avatar+'" alt="avatar">':
+        '<div class="nav-avatar-initial">'+me.username[0].toUpperCase()+'</div>';}
+
+      // Use server submissions — server is the source of truth
+      var logs=subsData&&subsData.submissions?subsData.submissions:[];
+
+      var hasLogs=logs&&Array.isArray(logs)&&logs.length>0;
+      loading.style.display='none';
+
+      if(!hasLogs){
+        // NEW USER
+        document.getElementById('new-welcome-name').textContent='Welcome, '+me.username+'!';
+        document.getElementById('state-new').style.display='block';
+        return;
+      }
+
+      // RETURNING USER
+      document.getElementById('state-returning').style.display='block';
+      var sorted=logs.slice().sort(function(a,b){return a.date<b.date?-1:1;});
+      var last=sorted[sorted.length-1];
+      var xp=prog&&prog.loggedIn?prog.xp:0;
+      var streak=prog&&prog.loggedIn?prog.streak:0;
+      var li=getLevelInfo(xp);
+
+      // Greeting
+      var now=new Date();
+      var h=now.getHours();
+      var greet=h<12?'Good morning':(h<17?'Good afternoon':'Good evening');
+      document.getElementById('ret-greeting').textContent=greet+', '+me.username+'!';
+      document.getElementById('ret-date').textContent=now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+      // Stats
+      var fsiVal=parseFloat(last.fsi)||0;
+      var fsiEl=document.getElementById('stat-fsi');
+      fsiEl.textContent=fsiVal.toFixed(1);
+      fsiEl.className='stat-value '+(fsiVal>=75?'fsi-green':fsiVal>=50?'fsi-yellow':'fsi-red');
+      document.getElementById('stat-fsi-label').textContent=fsiVal>=75?'Excellent focus':(fsiVal>=50?'Good focus':'Needs improvement');
+      document.getElementById('stat-streak').textContent=streak;
+      document.getElementById('stat-xp').textContent=xp;
+      document.getElementById('stat-level-name').textContent=li.name;
+      document.getElementById('stat-days').textContent=logs.length;
+
+      // XP bar
+      document.getElementById('xp-level-text').textContent='Level '+li.level+' · '+li.name;
+      document.getElementById('xp-cur').textContent=xp;
+      if(li.nextMin){
+        var pct=Math.round(((xp-li.min)/(li.nextMin-li.min))*100);
+        document.getElementById('xp-bar-fill').style.width=pct+'%';
+        document.getElementById('xp-bar-min').textContent=li.min+' XP';
+        var nextL=SB_LEVELS.find(function(l){return l.min===li.nextMin;});
+        document.getElementById('xp-bar-next').textContent=li.nextMin+' → '+(nextL?nextL.name:'Max');
+      } else {
+        document.getElementById('xp-bar-fill').style.width='100%';
+        document.getElementById('xp-bar-min').textContent='MAX LEVEL';
+        document.getElementById('xp-bar-next').textContent='ScrollBye Legend';
+      }
+
+      // 7-day chart
+      var last7=sorted.slice(-7);
+      var labels=last7.map(function(e){return e.date.slice(5);});
+      var vals=last7.map(function(e){return parseFloat(e.fsi)||0;});
+      var ctx=document.getElementById('fsi-chart').getContext('2d');
+      new Chart(ctx,{
+        type:'line',
+        data:{
+          labels:labels,
+          datasets:[{
+            label:'FSI',data:vals,
+            borderColor:'#6C63FF',backgroundColor:'rgba(108,99,255,0.12)',
+            borderWidth:2.5,pointBackgroundColor:'#6C63FF',pointRadius:4,
+            tension:0.4,fill:true
+          }]
+        },
+        options:{
+          responsive:true,maintainAspectRatio:false,
+          plugins:{legend:{display:false}},
+          scales:{
+            x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'rgba(220,220,255,0.4)',font:{size:11}}},
+            y:{min:0,max:100,grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'rgba(220,220,255,0.4)',font:{size:11}}}
+          }
+        }
+      });
+
+      // Insights
+      var insights=generateInsights(sorted);
+      if(insights&&insights.length){
+        var list=document.getElementById('insights-list');
+        list.innerHTML='';
+        insights.forEach(function(ins){
+          var d=document.createElement('div');d.className='insight-pill';
+          d.innerHTML='<span class="insight-icon">'+ins.icon+'</span><span class="insight-text">'+ins.text+'</span>';
+          list.appendChild(d);
+        });
+      }
+
+      // Hide CTA if already logged today — show again tomorrow
+      var todayStr=new Date().toISOString().slice(0,10);
+      var loggedToday=last&&last.date===todayStr;
+      var ctaWrap=document.getElementById('log-cta-wrap');
+      if(loggedToday&&ctaWrap)ctaWrap.style.display='none';
+
+      // Leaderboard rank + full table
+      fetch('/api/leaderboard').then(function(r){return r.json();}).then(function(lb){
+        var rank='#'+lb.length+'+';
+        for(var i=0;i<lb.length;i++){
+          if(lb[i].displayName===me.username){rank='#'+(i+1);break;}
+        }
+        document.getElementById('rank-num').textContent=rank;
+        document.getElementById('rank-sub').textContent='out of '+lb.length+' logged participants';
+        document.getElementById('lb-total-count').textContent=lb.length+' participants';
+        renderFsiLeaderboard(lb,me.username);
+      }).catch(function(){
+        document.getElementById('rank-sub').textContent='Leaderboard unavailable';
+        var skel=document.getElementById('lb-fsi-skel');if(skel)skel.style.display='none';
+        var err=document.getElementById('lb-fsi-err');if(err)err.style.display='';
+      });
+      loadXpLeaderboard(me.username);
+
+      // Update Log Today button for returning users
+      var logBtn=document.getElementById('log-today-btn');
+      if(logBtn&&prog&&prog.lastLogDate){
+        logBtn.href='/log-today';
+        logBtn.textContent='Log Today 📝';
+      }
+
+    })
+    .catch(function(){loading.style.display='none';location.href='/login?next=/dashboard';});
+})();
+</script>
+</body>
+</html>

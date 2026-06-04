@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ScrollBye — Sign In</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#04050d;--surface:#0a0c1a;--surface2:#111326;
+  --border:rgba(255,255,255,0.06);--border-hover:rgba(108,99,255,0.4);
+  --accent:#6C63FF;--accent2:#FF6B6B;--accent3:#43E97B;--accent4:#00D2FF;
+  --text:#EEEEFF;--muted:rgba(220,220,255,0.42);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden;display:flex;align-items:center;justify-content:center;}
+#star-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.55;}
+.grid-overlay{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(108,99,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(108,99,255,0.025) 1px,transparent 1px);background-size:80px 80px;}
+.orb{position:fixed;border-radius:50%;pointer-events:none;z-index:0;filter:blur(110px);}
+.orb1{width:600px;height:600px;background:radial-gradient(circle,rgba(108,99,255,0.18),transparent 70%);top:-200px;left:-200px;animation:od1 20s ease-in-out infinite alternate;}
+.orb2{width:400px;height:400px;background:radial-gradient(circle,rgba(0,210,255,0.1),transparent 70%);bottom:-100px;right:-100px;animation:od2 25s ease-in-out infinite alternate;}
+@keyframes od1{0%{transform:translate(0,0)}100%{transform:translate(60px,80px)}}
+@keyframes od2{0%{transform:translate(0,0)}100%{transform:translate(-50px,-60px)}}
+
+/* CARD */
+.card{position:relative;z-index:1;width:100%;max-width:430px;margin:1.5rem;background:linear-gradient(135deg,var(--surface) 0%,rgba(12,14,30,0.98) 100%);border:1px solid var(--border);border-radius:28px;padding:2.4rem 2.4rem 2.2rem;box-shadow:0 40px 100px rgba(0,0,0,0.5);animation:cardIn 0.7s cubic-bezier(0.16,1,0.3,1) both;}
+@keyframes cardIn{from{opacity:0;transform:translateY(32px)}to{opacity:1;transform:translateY(0)}}
+
+/* BACK */
+.back-link{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);text-decoration:none;margin-bottom:2rem;transition:color 0.2s;}
+.back-link:hover{color:var(--text);}
+
+/* LOGO */
+.logo-row{display:flex;align-items:center;gap:7px;margin-bottom:2rem;}
+.logo-wrap-sm{position:relative;width:42px;height:42px;flex-shrink:0;}
+.logo-inner-sm{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.42);transform-origin:center;width:100px;height:100px;}
+.lg{position:absolute;inset:-20px;border-radius:50%;background:radial-gradient(circle,rgba(108,99,255,0.25),transparent 70%);opacity:0.6;pointer-events:none;animation:halo 3s ease-in-out infinite;}
+@keyframes halo{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(1.15);opacity:0.9}}
+.lsw{position:relative;width:100px;height:100px;display:flex;align-items:center;justify-content:center;}
+.lr{position:absolute;border-radius:50%;border:1.5px solid transparent;}
+.lr1{inset:0;border-color:rgba(108,99,255,0.7) transparent transparent transparent;animation:spin 3.5s linear infinite;}
+.lr2{inset:10px;border-color:transparent rgba(0,210,255,0.6) transparent transparent;animation:spin 5s linear infinite reverse;}
+.lr3{inset:20px;border-color:rgba(67,233,123,0.5) transparent transparent transparent;animation:spin 8s linear infinite;}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.lcc{position:absolute;inset:28px;border-radius:50%;background:linear-gradient(135deg,#1a1040,#0a2040);border:2px solid rgba(108,99,255,0.5);display:flex;align-items:center;justify-content:center;box-shadow:0 0 30px rgba(108,99,255,0.5);animation:cp 2.5s ease-in-out infinite;overflow:hidden;}
+@keyframes cp{0%,100%{box-shadow:0 0 25px rgba(108,99,255,0.5);}50%{box-shadow:0 0 50px rgba(108,99,255,0.8);}}
+.lcc::after{content:'';position:absolute;top:-100%;left:0;right:0;height:100%;background:linear-gradient(transparent,rgba(108,99,255,0.15),transparent);animation:sl 3s ease-in-out infinite;}
+@keyframes sl{0%{top:-100%}100%{top:200%}}
+.lisvg{width:26px;height:26px;position:relative;z-index:1;}
+.lod{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--accent3);box-shadow:0 0 12px var(--accent3);top:50%;left:0;transform-origin:50px 0;animation:od 4s linear infinite;}
+@keyframes od{0%{transform:translateY(-50%) rotate(0deg) translateX(46px) rotate(0deg);}100%{transform:translateY(-50%) rotate(360deg) translateX(46px) rotate(-360deg);}}
+.lod2{position:absolute;width:6px;height:6px;border-radius:50%;background:var(--accent2);box-shadow:0 0 10px var(--accent2);top:50%;left:0;transform-origin:50px 0;animation:od2 6s linear infinite reverse;}
+@keyframes od2{0%{transform:translateY(-50%) rotate(0deg) translateX(46px) rotate(0deg);}100%{transform:translateY(-50%) rotate(360deg) translateX(46px) rotate(-360deg);}}
+.logo-name{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;background:linear-gradient(135deg,#fff 0%,#9B94FF 40%,var(--accent4) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+
+/* TABS */
+.tabs{display:flex;gap:4px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:14px;padding:4px;margin-bottom:2rem;}
+.tab{flex:1;padding:8px;border-radius:10px;border:none;background:transparent;color:var(--muted);font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.25s;letter-spacing:0.02em;}
+.tab.active{background:linear-gradient(135deg,var(--accent),var(--accent4));color:#fff;box-shadow:0 4px 16px rgba(108,99,255,0.4);}
+
+/* PANELS */
+.panel{display:none;}
+.panel.active{display:block;animation:panelIn 0.4s cubic-bezier(0.16,1,0.3,1) both;}
+@keyframes panelIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+/* FIELDS */
+.field{margin-bottom:1rem;}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:6px;}
+.field input{width:100%;padding:0.85rem 1rem;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:12px;color:var(--text);font-size:15px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color 0.2s,box-shadow 0.2s;}
+.field input:focus{border-color:rgba(108,99,255,0.5);box-shadow:0 0 0 3px rgba(108,99,255,0.1);}
+.field input::placeholder{color:rgba(200,195,255,0.25);}
+
+/* BIRTHDAY DROPDOWNS — Roblox style */
+.bday-label{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;}
+.bday-row{display:grid;grid-template-columns:2fr 1fr 1.4fr;gap:10px;margin-bottom:1rem;}
+.bday-select{
+  width:100%;padding:0.85rem 0.9rem;
+  background:rgba(255,255,255,0.04);border:1px solid var(--border);
+  border-radius:12px;color:var(--text);font-size:15px;font-family:'DM Sans',sans-serif;
+  outline:none;appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(200,195,255,0.4)' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;
+  padding-right:32px;cursor:pointer;
+  transition:border-color 0.2s,box-shadow 0.2s;
+}
+.bday-select:focus{border-color:rgba(108,99,255,0.5);box-shadow:0 0 0 3px rgba(108,99,255,0.1);}
+.bday-select option{background:#0d0f1f;color:var(--text);}
+
+/* PASSWORD STRENGTH */
+.pw-strength{display:flex;gap:4px;margin-top:6px;}
+.pw-bar{flex:1;height:3px;border-radius:2px;background:var(--border);transition:background 0.3s;}
+.pw-bar.weak{background:#FF6B6B;}.pw-bar.fair{background:#FFB347;}.pw-bar.strong{background:#43E97B;}
+
+/* BUTTON */
+.btn-main{width:100%;padding:0.95rem;border-radius:14px;background:linear-gradient(135deg,var(--accent),var(--accent4));border:none;color:#fff;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;cursor:pointer;letter-spacing:0.03em;box-shadow:0 6px 24px rgba(108,99,255,0.4);transition:transform 0.2s,box-shadow 0.2s,opacity 0.2s;margin-top:0.25rem;}
+.btn-main:hover{transform:translateY(-2px);box-shadow:0 12px 36px rgba(108,99,255,0.55);}
+.btn-main:active{transform:scale(0.98);}
+.btn-main:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+
+/* REMEMBER / SAVE DEVICE */
+.remember-row{display:flex;align-items:center;gap:10px;margin:0.85rem 0 0.1rem;cursor:pointer;user-select:none;width:fit-content;}
+.remember-row input[type=checkbox]{display:none;}
+.remember-box{width:18px;height:18px;border-radius:5px;border:1.5px solid rgba(108,99,255,0.4);background:rgba(255,255,255,0.03);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.2s;}
+.remember-row input:checked+.remember-box{background:var(--accent);border-color:var(--accent);box-shadow:0 0 8px rgba(108,99,255,0.5);}
+.remember-box::after{content:'';display:block;width:5px;height:9px;border:2px solid #fff;border-top:none;border-left:none;transform:rotate(45deg) scaleX(0) scaleY(0);transition:transform 0.15s;}
+.remember-row input:checked+.remember-box::after{transform:rotate(45deg) scaleX(1) scaleY(1);}
+.remember-text{font-size:13px;color:var(--muted);transition:color 0.2s;}
+.remember-row:hover .remember-text{color:var(--text);}
+
+/* GOOGLE BUTTON */
+.btn-google{width:100%;padding:0.85rem;border-radius:14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:background 0.2s,border-color 0.2s;margin-top:0.75rem;}
+.btn-google:hover{background:rgba(255,255,255,0.09);border-color:rgba(255,255,255,0.2);}
+.btn-google svg{flex-shrink:0;}
+.or-divider{display:flex;align-items:center;gap:10px;margin:1rem 0 0;}
+.or-divider::before,.or-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+.or-divider span{font-size:12px;color:var(--muted);letter-spacing:0.05em;white-space:nowrap;}
+
+/* BANNER */
+.banner{padding:0.75rem 1rem;border-radius:12px;font-size:13px;line-height:1.5;margin-bottom:1rem;display:none;}
+.banner.error{background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.25);color:rgba(255,180,180,0.9);}
+.banner.success{background:rgba(67,233,123,0.1);border:1px solid rgba(67,233,123,0.25);color:rgba(150,255,190,0.9);}
+.banner.show{display:block;animation:fadeUp 0.3s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* RIPPLE */
+.ripple{position:fixed;border-radius:50%;pointer-events:none;z-index:9999;background:radial-gradient(circle,rgba(108,99,255,0.35),transparent 70%);transform:scale(0);animation:ripOut 0.5s ease-out forwards;}
+@keyframes ripOut{0%{transform:scale(0);opacity:1}100%{transform:scale(4);opacity:0}}
+</style>
+</head>
+<body>
+<canvas id="star-canvas"></canvas>
+<div class="grid-overlay"></div>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+
+<div class="card">
+  <a class="back-link" href="/">← Back to home</a>
+
+  <!-- Logo -->
+  <div class="logo-row">
+    <div class="logo-wrap-sm">
+      <div class="logo-inner-sm">
+        <div class="lg"></div>
+        <div class="lsw">
+          <div class="lr lr1"></div><div class="lr lr2"></div><div class="lr lr3"></div>
+          <div class="lod"></div><div class="lod2"></div>
+          <div class="lcc">
+            <svg class="lisvg" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="7" y="2" width="14" height="22" rx="3" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" fill="none"/>
+              <rect x="9" y="5" width="10" height="14" rx="1.5" fill="rgba(108,99,255,0.3)" stroke="rgba(108,99,255,0.6)" stroke-width="0.8"/>
+              <line x1="12" y1="8" x2="12" y2="13" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+              <line x1="14" y1="7" x2="14" y2="13" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+              <line x1="16" y1="8" x2="16" y2="13" stroke="white" stroke-width="1.4" stroke-linecap="round"/>
+              <path d="M11.5 13 Q11.5 15 14 15 Q16.5 15 16.5 13" stroke="white" stroke-width="1.4" stroke-linecap="round" fill="none"/>
+              <line x1="9.5" y1="5.8" x2="18.5" y2="5.8" stroke="var(--accent2)" stroke-width="1" stroke-linecap="round"/>
+              <circle cx="14" cy="22.5" r="1" fill="rgba(255,255,255,0.4)"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+    <span class="logo-name">ScrollBye</span>
+  </div>
+
+  <!-- Banners -->
+  <div class="banner error" id="err"></div>
+  <div class="banner success" id="ok"></div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" id="tab-login" onclick="switchTab('login')">Sign in</button>
+    <button class="tab" id="tab-signup" onclick="switchTab('signup')">Create account</button>
+  </div>
+
+  <!-- LOGIN PANEL -->
+  <div class="panel active" id="panel-login">
+    <div class="field">
+      <label>Username</label>
+      <input type="text" id="li-id" placeholder="your username" autocomplete="off" oninput="clearB()" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="li-pw" placeholder="Your password" autocomplete="new-password" oninput="clearB()" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <label class="remember-row"><input type="checkbox" id="li-remember"><div class="remember-box"></div><span class="remember-text">Save this device for 30 days</span></label>
+    <button class="btn-main" id="li-btn" onclick="doLogin()">Sign in</button>
+    <div class="or-divider" id="li-or" style="display:none"><span>or continue with</span></div>
+    <button class="btn-google" id="li-google" style="display:none" onclick="location.href='/auth/google'">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Continue with Google
+    </button>
+  </div>
+
+  <!-- SIGNUP PANEL -->
+  <div class="panel" id="panel-signup">
+    <div class="field">
+      <label>Username</label>
+      <input type="text" id="su-user" placeholder="scrollmaster99" autocomplete="username" oninput="clearB()">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="su-pw" placeholder="At least 8 characters" autocomplete="new-password" oninput="pwStr(this.value);clearB();checkPwMatch()">
+      <div class="pw-strength"><div class="pw-bar" id="pb0"></div><div class="pw-bar" id="pb1"></div><div class="pw-bar" id="pb2"></div><div class="pw-bar" id="pb3"></div></div>
+    </div>
+    <div class="field">
+      <label>Confirm Password</label>
+      <input type="password" id="su-pw2" placeholder="Repeat your password" autocomplete="new-password" oninput="checkPwMatch();clearB()">
+      <div id="pw-match-msg" style="font-size:12px;margin-top:5px;display:none;"></div>
+    </div>
+
+    <!-- BIRTHDAY — Roblox style -->
+    <div class="bday-label">Date of birth</div>
+    <div class="bday-row">
+      <select class="bday-select" id="su-month"><option value="">Month</option></select>
+      <select class="bday-select" id="su-day"><option value="">Day</option></select>
+      <select class="bday-select" id="su-year"><option value="">Year</option></select>
+    </div>
+
+    <button class="btn-main" id="su-btn" onclick="doSignup()">Create account</button>
+    <div class="or-divider" id="su-or" style="display:none"><span>or sign up with</span></div>
+    <button class="btn-google" id="su-google" style="display:none" onclick="location.href='/auth/google'">
+      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Sign up with Google
+    </button>
+  </div>
+</div>
+
+<script>
+(function(){
+  // Stars
+  var c=document.getElementById('star-canvas'),ctx=c.getContext('2d'),stars=[];
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize();window.addEventListener('resize',resize);
+  for(var i=0;i<160;i++)stars.push({x:Math.random()*window.innerWidth,y:Math.random()*window.innerHeight,r:Math.random()*1.2+0.2,a:Math.random(),speed:Math.random()*0.006+0.002,t:Math.random()*Math.PI*2});
+  (function draw(){ctx.clearRect(0,0,c.width,c.height);stars.forEach(function(s){s.t+=s.speed;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle='rgba(200,200,255,'+(s.a*(0.5+0.5*Math.sin(s.t)))+')';ctx.fill();});requestAnimationFrame(draw);})();
+  // Ripple
+  document.addEventListener('click',function(e){var r=document.createElement('div');r.className='ripple';var s=80;r.style.cssText='width:'+s+'px;height:'+s+'px;left:'+(e.clientX-s/2)+'px;top:'+(e.clientY-s/2)+'px;';document.body.appendChild(r);setTimeout(function(){r.remove();},500);});
+
+  // Show Google buttons if backend has credentials
+  fetch('/api/google-enabled').then(function(r){return r.json();}).then(function(d){
+    if(d.enabled){
+      ['li-or','li-google','su-or','su-google'].forEach(function(id){
+        document.getElementById(id).style.display='';
+      });
+    }
+  }).catch(function(){});
+
+  // Handle error query param from failed OAuth
+  var params=new URLSearchParams(location.search);
+  var err=params.get('error');
+  if(err==='google_failed'){document.getElementById('err').textContent='Google sign-in failed. Please try again.';document.getElementById('err').classList.add('show');}
+  else if(err==='google_not_configured'){document.getElementById('err').textContent='Google sign-in is not configured yet.';document.getElementById('err').classList.add('show');}
+
+  // Populate birthday dropdowns
+  var months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var ms=document.getElementById('su-month');
+  months.forEach(function(m,i){var o=document.createElement('option');o.value=String(i+1).padStart(2,'0');o.textContent=m;ms.appendChild(o);});
+  var ds=document.getElementById('su-day');
+  for(var d=1;d<=31;d++){var o=document.createElement('option');o.value=String(d).padStart(2,'0');o.textContent=d;ds.appendChild(o);}
+  var ys=document.getElementById('su-year');
+  var now=new Date().getFullYear();
+  for(var y=now;y>=now-100;y--){var o=document.createElement('option');o.value=y;o.textContent=y;ys.appendChild(o);}
+})();
+
+function switchTab(t){
+  clearB();
+  document.getElementById('tab-login').classList.toggle('active',t==='login');
+  document.getElementById('tab-signup').classList.toggle('active',t==='signup');
+  document.getElementById('panel-login').classList.toggle('active',t==='login');
+  document.getElementById('panel-signup').classList.toggle('active',t==='signup');
+}
+
+function showErr(m){var b=document.getElementById('err');b.textContent=m;b.classList.add('show');document.getElementById('ok').classList.remove('show');}
+function showOk(m){var b=document.getElementById('ok');b.textContent=m;b.classList.add('show');document.getElementById('err').classList.remove('show');}
+function clearB(){document.getElementById('err').classList.remove('show');document.getElementById('ok').classList.remove('show');}
+
+function pwStr(v){
+  var s=0;if(v.length>=8)s++;if(/[A-Z]/.test(v))s++;if(/[0-9]/.test(v))s++;if(/[^a-zA-Z0-9]/.test(v))s++;
+  var cl=['','weak','fair','strong'];
+  for(var i=0;i<4;i++){var b=document.getElementById('pb'+i);b.className='pw-bar';if(i<s)b.classList.add(cl[s]||'strong');}
+}
+
+function doLogin(){
+  var id=document.getElementById('li-id').value.trim();
+  var pw=document.getElementById('li-pw').value;
+  if(!id||!pw){showErr('Please fill in both fields.');return;}
+  var btn=document.getElementById('li-btn');btn.disabled=true;btn.textContent='Signing in…';
+  var remember=document.getElementById('li-remember').checked;
+  fetch('/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifier:id,password:pw,remember:remember})})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      btn.disabled=false;btn.textContent='Sign in';
+      if(d.ok){
+        showOk('Welcome back! Redirecting…');
+        setTimeout(function(){
+          var p=new URLSearchParams(location.search).get('next');
+          if(p){location.href=p;return;}
+          Promise.all([fetch('/api/me'),fetch('/api/my-progress')])
+            .then(function(rs){return Promise.all(rs.map(function(r){return r.json();}));})
+            .then(function(data){
+              var me=data[0],prog=data[1];
+              if(me.isAdmin){location.href='/admin';}
+              else if(prog.lastLogDate){location.href='/dashboard';}
+              else{location.href='/survey';}
+            }).catch(function(){location.href='/dashboard';});
+        },700);
+      }
+      else{showErr(d.error||'Sign-in failed.');}
+    })
+    .catch(function(){btn.disabled=false;btn.textContent='Sign in';showErr('Network error.');});
+}
+
+function checkPwMatch(){
+  var pw=document.getElementById('su-pw').value;
+  var pw2=document.getElementById('su-pw2').value;
+  var msg=document.getElementById('pw-match-msg');
+  if(!pw2){msg.style.display='none';return;}
+  if(pw===pw2){
+    msg.style.display='block';msg.style.color='var(--accent3)';msg.textContent='✓ Passwords match';
+  } else {
+    msg.style.display='block';msg.style.color='var(--accent2)';msg.textContent='✗ Passwords do not match';
+  }
+}
+function doSignup(){
+  var user=document.getElementById('su-user').value.trim();
+  var pw=document.getElementById('su-pw').value;
+  var pw2=document.getElementById('su-pw2').value;
+  var mo=document.getElementById('su-month').value;
+  var dy=document.getElementById('su-day').value;
+  var yr=document.getElementById('su-year').value;
+  if(!user||!pw){showErr('Please fill in all fields.');return;}
+  if(!mo||!dy||!yr){showErr('Please select your full date of birth.');return;}
+  if(pw.length<8){showErr('Password must be at least 8 characters.');return;}
+  if(pw!==pw2){showErr('Passwords do not match.');document.getElementById('su-pw2').focus();return;}
+  var dob=yr+'-'+mo+'-'+dy;
+  var btn=document.getElementById('su-btn');btn.disabled=true;btn.textContent='Creating account…';
+  fetch('/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:user,password:pw,dob:dob})})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      btn.disabled=false;btn.textContent='Create account';
+      if(d.ok){
+        showOk('Account created! Redirecting…');
+        setTimeout(function(){
+          var p=new URLSearchParams(location.search).get('next');
+          if(p){location.href=p;return;}
+          location.href='/survey';
+        },700);
+      }
+      else{showErr(d.error||'Sign-up failed.');}
+    })
+    .catch(function(){btn.disabled=false;btn.textContent='Create account';showErr('Network error.');});
+}
+</script>
+</body>
+</html>

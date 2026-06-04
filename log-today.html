@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ScrollBye — Quick Daily Log</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#04050d;--surface:#0a0c1a;--surface2:#111326;
+  --border:rgba(255,255,255,0.06);--border-hover:rgba(108,99,255,0.4);
+  --accent:#6C63FF;--accent2:#FF6B6B;--accent3:#43E97B;--accent4:#00D2FF;
+  --text:#EEEEFF;--muted:rgba(220,220,255,0.42);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden;}
+
+#star-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.5;}
+.grid-overlay{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(rgba(108,99,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(108,99,255,0.025) 1px,transparent 1px);
+  background-size:80px 80px;}
+.orb{position:fixed;border-radius:50%;pointer-events:none;z-index:0;filter:blur(100px);}
+.orb1{width:600px;height:600px;background:radial-gradient(circle,rgba(108,99,255,0.18),transparent 70%);top:-150px;left:-150px;animation:od1 20s ease-in-out infinite alternate;}
+.orb2{width:400px;height:400px;background:radial-gradient(circle,rgba(67,233,123,0.12),transparent 70%);bottom:-80px;right:-80px;animation:od2 25s ease-in-out infinite alternate;}
+@keyframes od1{0%{transform:translate(0,0)}100%{transform:translate(50px,70px)}}
+@keyframes od2{0%{transform:translate(0,0)}100%{transform:translate(-40px,-50px)}}
+
+/* NAVBAR */
+.navbar{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:0 1.5rem;height:60px;background:rgba(4,5,13,0.85);backdrop-filter:blur(18px);border-bottom:1px solid var(--border);}
+.nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);}
+.nav-brand-text{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;letter-spacing:0.02em;}
+.nav-links{display:flex;gap:0.25rem;}
+.nav-link{padding:6px 14px;border-radius:50px;font-size:13px;font-weight:500;color:var(--muted);text-decoration:none;transition:color 0.2s,background 0.2s;}
+.nav-link:hover{color:var(--text);background:rgba(255,255,255,0.06);}
+.nav-link.active{color:var(--accent);background:rgba(108,99,255,0.1);}
+.nav-right{display:flex;align-items:center;gap:0.5rem;}
+.nav-avatar{width:32px;height:32px;border-radius:50%;border:2px solid var(--accent);object-fit:cover;}
+.nav-avatar-initial{width:32px;height:32px;border-radius:50%;border:2px solid var(--accent);background:var(--surface2);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:13px;color:var(--accent);text-decoration:none;}
+.nav-logout-btn{padding:5px 14px;border-radius:50px;font-size:12px;font-weight:600;color:var(--muted);text-decoration:none;border:1px solid var(--border);transition:all 0.2s;}
+.nav-logout-btn:hover{color:var(--text);border-color:var(--border-hover);}
+
+/* PAGE */
+.page-wrap{position:relative;z-index:1;max-width:620px;margin:0 auto;padding:80px 1.5rem 6rem;}
+.page-header{text-align:center;margin-bottom:2.5rem;}
+.page-title{font-family:'Syne',sans-serif;font-size:clamp(26px,5vw,36px);font-weight:800;line-height:1.1;margin-bottom:0.5rem;}
+.page-sub{font-size:14px;color:var(--muted);}
+
+/* FORM CARD */
+.log-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:1.5rem;margin-bottom:1.25rem;}
+.log-card-label{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:1rem;}
+.log-card-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;margin-bottom:0.35rem;}
+.log-card-hint{font-size:12px;color:var(--muted);margin-bottom:1rem;}
+
+/* SLIDER */
+.slider-wrap{display:flex;align-items:center;gap:1rem;}
+.slider-val{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent);min-width:48px;text-align:right;}
+input[type=range]{-webkit-appearance:none;flex:1;height:6px;border-radius:3px;background:var(--surface2);outline:none;cursor:pointer;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px rgba(108,99,255,0.5);cursor:pointer;}
+
+/* MOOD PICKER */
+.mood-grid{display:flex;gap:0.6rem;flex-wrap:wrap;}
+.mood-btn{flex:1;min-width:52px;padding:0.75rem 0.5rem;border-radius:14px;border:1.5px solid var(--border);background:var(--surface2);cursor:pointer;text-align:center;transition:all 0.2s;font-size:22px;display:flex;flex-direction:column;align-items:center;gap:4px;}
+.mood-btn span{font-size:10px;color:var(--muted);font-weight:500;}
+.mood-btn.active{border-color:var(--accent);background:rgba(108,99,255,0.12);box-shadow:0 0 16px rgba(108,99,255,0.25);}
+.mood-btn:hover:not(.active){border-color:var(--border-hover);}
+
+/* PILL GROUP */
+.pill-group{display:flex;gap:0.5rem;flex-wrap:wrap;}
+.pill-btn{padding:8px 16px;border-radius:50px;border:1.5px solid var(--border);background:var(--surface2);color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s;}
+.pill-btn.active{border-color:var(--accent);background:rgba(108,99,255,0.12);color:var(--text);}
+.pill-btn:hover:not(.active){border-color:var(--border-hover);color:var(--text);}
+
+/* SUBMIT */
+.submit-btn{width:100%;padding:16px;border-radius:50px;background:linear-gradient(135deg,var(--accent),var(--accent4));border:none;color:white;font-family:'Syne',sans-serif;font-size:16px;font-weight:800;cursor:pointer;letter-spacing:0.02em;box-shadow:0 8px 30px rgba(108,99,255,0.4);transition:transform 0.2s,box-shadow 0.2s;margin-top:0.5rem;}
+.submit-btn:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(108,99,255,0.55);}
+.submit-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+
+/* CELEBRATION */
+.celebrate-overlay{position:fixed;inset:0;z-index:200;background:rgba(4,5,13,0.95);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;}
+.celebrate-icon{font-size:64px;margin-bottom:1rem;animation:popIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;}
+.celebrate-title{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;margin-bottom:0.5rem;}
+.celebrate-sub{color:var(--muted);font-size:14px;max-width:300px;line-height:1.6;}
+@keyframes popIn{0%{transform:scale(0)}100%{transform:scale(1)}}
+</style>
+</head>
+<body>
+
+<canvas id="star-canvas"></canvas>
+<div class="grid-overlay"></div>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+
+<!-- ALREADY LOGGED TODAY OVERLAY -->
+<div id="already-logged-overlay" style="display:none;position:fixed;inset:0;z-index:100;background:var(--bg);flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;">
+  <div style="width:72px;height:72px;border-radius:50%;border:2px solid var(--accent3);box-shadow:0 0 30px rgba(67,233,123,0.4);display:flex;align-items:center;justify-content:center;font-size:32px;margin-bottom:1.5rem;">✓</div>
+  <h2 style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;margin-bottom:0.5rem;">Already logged today</h2>
+  <p style="color:var(--muted);font-size:14px;max-width:360px;line-height:1.6;margin-bottom:0.5rem;">Great job keeping your streak alive. Your next log opens at midnight.</p>
+  <div id="todays-fsi-display" style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--accent3);margin-bottom:1.5rem;"></div>
+  <div id="countdown-display" style="display:flex;gap:1rem;justify-content:center;margin:1.5rem 0;">
+    <div style="text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:1rem 1.25rem;min-width:80px;">
+      <div id="cd-hours" style="font-family:'Syne',sans-serif;font-size:36px;font-weight:800;color:var(--accent);line-height:1;">00</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:0.08em;">HRS</div>
+    </div>
+    <div style="text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:1rem 1.25rem;min-width:80px;">
+      <div id="cd-minutes" style="font-family:'Syne',sans-serif;font-size:36px;font-weight:800;color:var(--accent);line-height:1;">00</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:0.08em;">MIN</div>
+    </div>
+    <div style="text-align:center;background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:1rem 1.25rem;min-width:80px;">
+      <div id="cd-seconds" style="font-family:'Syne',sans-serif;font-size:36px;font-weight:800;color:var(--accent3);line-height:1;">00</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:0.08em;">SEC</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:1rem;">
+    <a href="/dashboard" style="padding:12px 28px;border-radius:50px;background:linear-gradient(135deg,var(--accent),var(--accent4));color:white;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;text-decoration:none;">Go to Dashboard</a>
+    <a href="/results" style="padding:12px 28px;border-radius:50px;border:1px solid var(--border);color:var(--text);font-family:'Syne',sans-serif;font-weight:700;font-size:14px;text-decoration:none;">View My Results</a>
+  </div>
+</div>
+
+<!-- CELEBRATION -->
+<div class="celebrate-overlay" id="celebrate-overlay">
+  <div class="celebrate-icon">🎯</div>
+  <div class="celebrate-title">Log saved!</div>
+  <div class="celebrate-sub">Redirecting to your results…</div>
+</div>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <a class="nav-brand" href="/">
+    <span class="nav-brand-text">ScrollBye</span>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link" href="/dashboard">Dashboard</a>
+    <a class="nav-link" href="/survey">Full Survey</a>
+  </div>
+  <div class="nav-right" id="nav-right"></div>
+</nav>
+
+<!-- FORM -->
+<div class="page-wrap" id="log-form-wrap">
+  <div class="page-header">
+    <div class="page-title">Quick Daily Log</div>
+    <div class="page-sub">Takes 60 seconds · keeps your streak alive</div>
+  </div>
+
+  <!-- Passive screen time -->
+  <div class="log-card">
+    <div class="log-card-label">Screen Time</div>
+    <div class="log-card-title">Passive screen time today</div>
+    <div class="log-card-hint">Scrolling social media, watching videos, browsing</div>
+    <div class="slider-wrap">
+      <input type="range" id="passive-slider" min="0" max="8" step="0.5" value="3" oninput="document.getElementById('passive-val').textContent=this.value+'h'">
+      <div class="slider-val" id="passive-val">3h</div>
+    </div>
+  </div>
+
+  <!-- Active screen time -->
+  <div class="log-card">
+    <div class="log-card-label">Screen Time</div>
+    <div class="log-card-title">Active screen time today</div>
+    <div class="log-card-hint">Studying, creating, productive tasks on screen</div>
+    <div class="slider-wrap">
+      <input type="range" id="active-slider" min="0" max="6" step="0.5" value="2" oninput="document.getElementById('active-val').textContent=this.value+'h'">
+      <div class="slider-val" id="active-val">2h</div>
+    </div>
+  </div>
+
+  <!-- Sleep -->
+  <div class="log-card">
+    <div class="log-card-label">Sleep</div>
+    <div class="log-card-title">How many hours did you sleep?</div>
+    <div class="slider-wrap">
+      <input type="range" id="sleep-slider" min="4" max="11" step="0.5" value="7" oninput="document.getElementById('sleep-val').textContent=this.value+'h'">
+      <div class="slider-val" id="sleep-val">7h</div>
+    </div>
+  </div>
+
+  <!-- Mood -->
+  <div class="log-card">
+    <div class="log-card-label">Mood</div>
+    <div class="log-card-title">How are you feeling right now?</div>
+    <div class="mood-grid" id="mood-grid">
+      <button class="mood-btn" data-mood="1" onclick="selectMood(1)">😫<span>Terrible</span></button>
+      <button class="mood-btn" data-mood="2" onclick="selectMood(2)">😟<span>Bad</span></button>
+      <button class="mood-btn active" data-mood="3" onclick="selectMood(3)">😐<span>Okay</span></button>
+      <button class="mood-btn" data-mood="4" onclick="selectMood(4)">🙂<span>Good</span></button>
+      <button class="mood-btn" data-mood="5" onclick="selectMood(5)">😄<span>Great</span></button>
+    </div>
+  </div>
+
+  <!-- Study -->
+  <div class="log-card">
+    <div class="log-card-label">Study / Work</div>
+    <div class="log-card-title">Study or focused work hours</div>
+    <div class="slider-wrap">
+      <input type="range" id="study-slider" min="0" max="8" step="0.5" value="2" oninput="document.getElementById('study-val').textContent=this.value+'h'">
+      <div class="slider-val" id="study-val">2h</div>
+    </div>
+  </div>
+
+  <!-- Phone checks during study -->
+  <div class="log-card">
+    <div class="log-card-label">Focus Quality</div>
+    <div class="log-card-title">Phone checks during study/work</div>
+    <div class="pill-group" id="checks-group">
+      <button class="pill-btn active" data-checks="0" onclick="selectChecks(0)">None</button>
+      <button class="pill-btn" data-checks="2" onclick="selectChecks(2)">1–3</button>
+      <button class="pill-btn" data-checks="5" onclick="selectChecks(5)">4–6</button>
+      <button class="pill-btn" data-checks="8" onclick="selectChecks(8)">7–10</button>
+      <button class="pill-btn" data-checks="12" onclick="selectChecks(12)">10+</button>
+    </div>
+  </div>
+
+  <button class="submit-btn" id="submit-btn" onclick="submitLog()">Submit Today's Log →</button>
+</div>
+
+<script>
+// ── STARS ────────────────────────────────────────────────
+(function(){
+  var c=document.getElementById('star-canvas'),ctx=c.getContext('2d'),stars=[];
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize();window.addEventListener('resize',resize);
+  for(var i=0;i<180;i++)stars.push({x:Math.random()*window.innerWidth,y:Math.random()*window.innerHeight,r:Math.random()*1.4+0.2,a:Math.random(),speed:Math.random()*0.006+0.002,t:Math.random()*Math.PI*2});
+  function draw(){
+    ctx.clearRect(0,0,c.width,c.height);
+    stars.forEach(function(s){s.t+=s.speed;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle='rgba(200,200,255,'+(s.a*(0.5+0.5*Math.sin(s.t)))+')';ctx.fill();});
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+
+// ── ALREADY LOGGED CHECK ─────────────────────────────────
+function startCountdown(){
+  function tick(){
+    var now=new Date();var midnight=new Date(now);midnight.setHours(24,0,0,0);
+    var diff=midnight-now;
+    if(diff<=0){window.location.reload();return;}
+    var hours=Math.floor(diff/(1000*60*60));
+    var minutes=Math.floor((diff%(1000*60*60))/(1000*60));
+    var seconds=Math.floor((diff%(1000*60))/1000);
+    document.getElementById('cd-hours').textContent=String(hours).padStart(2,'0');
+    document.getElementById('cd-minutes').textContent=String(minutes).padStart(2,'0');
+    document.getElementById('cd-seconds').textContent=String(seconds).padStart(2,'0');
+  }
+  tick();setInterval(tick,1000);
+}
+
+async function checkIfAlreadyLogged(){
+  var today=new Date().toISOString().split('T')[0];
+  try{
+    var resp=await fetch('/api/my-progress');
+    var data=await resp.json();
+    if(!data.loggedIn||data.lastLogDate!==today)return;
+  }catch(e){return;}
+  var formEl=document.getElementById('log-form-wrap');
+  if(formEl)formEl.style.display='none';
+  var overlay=document.getElementById('already-logged-overlay');
+  if(overlay){
+    overlay.style.display='flex';
+    startCountdown();
+    try{
+      var subResp=await fetch('/api/my-latest-submission');
+      var subData=await subResp.json();
+      var fsiEl=document.getElementById('todays-fsi-display');
+      if(fsiEl&&subData.ok&&subData.submission&&subData.submission.fsi!=null){
+        var fsi=subData.submission.fsi;
+        fsiEl.textContent="Today's FSI: "+fsi+" / 100";
+        fsiEl.style.color=fsi>=75?'var(--accent3)':fsi>=50?'#FFB347':'var(--accent2)';
+      }
+    }catch(e){}
+  }
+}
+checkIfAlreadyLogged();
+
+// ── NAV ──────────────────────────────────────────────────
+fetch('/api/me').then(function(r){return r.json();}).then(function(me){
+  if(me.loggedIn){
+    var a=me.avatar?'<a href="/profile"><img class="nav-avatar" src="'+me.avatar+'" alt="avatar"></a>':'<a href="/profile" class="nav-avatar-initial">'+me.username[0].toUpperCase()+'</a>';
+    document.getElementById('nav-right').innerHTML=a+'<a class="nav-logout-btn" href="/auth/logout">Logout</a>';
+  }
+}).catch(function(){});
+
+// ── FORM STATE ───────────────────────────────────────────
+var selectedMood=3;
+var selectedChecks=0;
+
+function selectMood(m){
+  selectedMood=m;
+  document.querySelectorAll('.mood-btn').forEach(function(b){b.classList.toggle('active',parseInt(b.dataset.mood)===m);});
+}
+function selectChecks(c){
+  selectedChecks=c;
+  document.querySelectorAll('#checks-group .pill-btn').forEach(function(b){b.classList.toggle('active',parseInt(b.dataset.checks)===c);});
+}
+
+// ── FSI FORMULA ──────────────────────────────────────────
+function calcFSI(passive,active,sleep,mood,study,checks){
+  var S=Math.max(0,Math.min(100,100-(passive*25)-(active*8)));
+  var sleepTable={4:35,4.5:42,5:50,5.5:57,6:64,6.5:70,7:78,7.5:84,8:90,8.5:93,9:95,9.5:97,10:98,10.5:99,11:100};
+  var L=sleepTable[Math.round(sleep*2)/2]||70;
+  var M=(mood/5)*100;
+  var studyScore=study>=6?90:study>=4?80:study>=2?68:study>=1?55:40;
+  var F=Math.max(0,Math.min(100,studyScore+(3-1)*5-checks*2));
+  var A=65;
+  return Math.round((S*0.25)+(L*0.20)+(M*0.20)+(F*0.20)+(A*0.15));
+}
+
+// ── SUBMIT ───────────────────────────────────────────────
+async function submitLog(){
+  var btn=document.getElementById('submit-btn');
+  btn.disabled=true;btn.textContent='Saving…';
+
+  var passive=parseFloat(document.getElementById('passive-slider').value)||0;
+  var active=parseFloat(document.getElementById('active-slider').value)||0;
+  var sleep=parseFloat(document.getElementById('sleep-slider').value)||7;
+  var study=parseFloat(document.getElementById('study-slider').value)||0;
+  var fsi=calcFSI(passive,active,sleep,selectedMood,study,selectedChecks);
+
+  var payload={fsi:fsi,passiveHours:passive,activeHours:active,sleepHours:sleep,mood:selectedMood,studyHours:study,phoneChecks:selectedChecks,isAnonymous:true};
+
+  try{
+    await fetch('/survey/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  }catch(e){}
+
+  // Celebrate then redirect
+  document.getElementById('celebrate-overlay').style.display='flex';
+  setTimeout(function(){window.location.href='/results';},2000);
+}
+</script>
+</body>
+</html>

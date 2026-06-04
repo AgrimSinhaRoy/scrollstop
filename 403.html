@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ScrollBye — Access Denied</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#04050d;--accent:#6C63FF;--accent2:#FF6B6B;--text:#EEEEFF;--muted:rgba(220,220,255,0.42);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+#star-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.5;}
+.orb{position:fixed;border-radius:50%;pointer-events:none;z-index:0;filter:blur(130px);}
+.orb1{width:600px;height:600px;background:radial-gradient(circle,rgba(255,107,107,0.14),transparent 70%);top:-200px;left:-200px;}
+.orb2{width:500px;height:500px;background:radial-gradient(circle,rgba(108,99,255,0.12),transparent 70%);bottom:-150px;right:-150px;}
+.card{position:relative;z-index:1;text-align:center;max-width:480px;padding:3rem 2.5rem;background:rgba(10,12,26,0.85);border:1px solid rgba(255,107,107,0.25);border-radius:24px;backdrop-filter:blur(20px);}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;background:rgba(255,107,107,0.15);border:1px solid rgba(255,107,107,0.35);border-radius:100px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--accent2);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:1.5rem;}
+.code{font-family:'Syne',sans-serif;font-size:6rem;font-weight:800;line-height:1;background:linear-gradient(135deg,var(--accent2),#ff8e53);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:0.5rem;}
+h1{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;margin-bottom:0.75rem;}
+p{color:var(--muted);font-size:15px;line-height:1.7;margin-bottom:2rem;}
+.countdown{font-size:13px;color:var(--muted);margin-bottom:1.5rem;}
+.countdown span{color:var(--accent2);font-weight:700;}
+.btn{display:inline-flex;align-items:center;padding:13px 30px;background:linear-gradient(135deg,var(--accent),#a78bfa);border:none;border-radius:12px;color:#fff;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;cursor:pointer;text-decoration:none;transition:opacity 0.2s,transform 0.15s;}
+.btn:hover{opacity:0.88;transform:translateY(-2px);}
+</style>
+</head>
+<body>
+<canvas id="star-canvas"></canvas>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="card">
+  <div class="badge">🚫 Error 403</div>
+  <div class="code">403</div>
+  <h1>Access Denied</h1>
+  <p>You don't have permission to access this page. This area is restricted to administrators only.</p>
+  <p class="countdown">Redirecting to dashboard in <span id="sec">3</span>s…</p>
+  <a class="btn" href="/dashboard">← Back to Dashboard</a>
+</div>
+<script>
+(function(){
+  var c=document.getElementById('star-canvas');
+  var ctx=c.getContext('2d'),W=0,H=0,stars=[];
+  function resize(){W=c.width=window.innerWidth;H=c.height=window.innerHeight;}
+  function mk(){return{x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.1+0.2,a:Math.random(),da:(Math.random()-0.5)*0.004+0.001};}
+  window.addEventListener('resize',function(){resize();stars=[];for(var i=0;i<140;i++)stars.push(mk());});
+  resize();for(var i=0;i<140;i++)stars.push(mk());
+  function draw(){ctx.clearRect(0,0,W,H);for(var i=0;i<stars.length;i++){var s=stars[i];s.a+=s.da;if(s.a<=0||s.a>=1)s.da*=-1;ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle='rgba(220,215,255,'+s.a.toFixed(2)+')';ctx.fill();}requestAnimationFrame(draw);}
+  draw();
+  var n=3,el=document.getElementById('sec');
+  var t=setInterval(function(){n--;el.textContent=n;if(n<=0){clearInterval(t);location.href='/dashboard';}},1000);
+})();
+</script>
+</body>
+</html>
