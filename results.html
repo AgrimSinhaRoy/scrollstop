@@ -273,8 +273,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .cta-secondary:hover{background:rgba(255,255,255,0.08);border-color:rgba(108,99,255,0.4);transform:translateY(-2px);}
 .cta-share{display:inline-flex;align-items:center;gap:8px;padding:15px 36px;border-radius:100px;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;background:rgba(67,233,123,0.08);border:1px solid rgba(67,233,123,0.25);color:var(--accent3);cursor:pointer;transition:all 0.25s;}
 .cta-share:hover{background:rgba(67,233,123,0.15);border-color:rgba(67,233,123,0.5);transform:translateY(-2px);}
-.cta-download{display:inline-flex;align-items:center;gap:8px;padding:15px 36px;border-radius:100px;font-family:'Syne',sans-serif;font-size:15px;font-weight:700;background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.3);color:var(--accent);cursor:pointer;transition:all 0.25s;}
-.cta-download:hover{background:rgba(108,99,255,0.15);border-color:var(--accent);transform:translateY(-2px);}
+
 
 /* ── EXTRA VISUAL EFFECTS ── */
 /* Celebrate banner */
@@ -317,7 +316,18 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .challenge-copy-btn:hover,.challenge-share-btn:hover{opacity:0.85;}
 .challenge-share-btn{background:linear-gradient(135deg,#43E97B,#38f9d7);}
 .challenge-gen-btn{background:linear-gradient(135deg,var(--accent),#a78bfa);border:none;border-radius:12px;padding:11px 22px;color:#fff;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;cursor:pointer;transition:opacity 0.2s,transform 0.15s;}
-.challenge-gen-btn:hover{opacity:0.88;transform:translateY(-1px);}
+.challenge-responses-section{margin-top:1rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,0.06);}
+.challenge-responses-heading{font-size:12px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:0.75rem;}
+.challenge-response-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);margin-bottom:6px;}
+.challenge-response-row:last-child{margin-bottom:0;}
+.challenge-response-name{font-size:13px;font-weight:600;color:var(--text);}
+.challenge-response-fsi{font-family:'Syne',sans-serif;font-size:14px;font-weight:800;}
+.challenge-response-badge{font-size:11px;font-weight:700;padding:2px 8px;border-radius:100px;margin-left:8px;}
+.badge-win{background:rgba(67,233,123,0.15);color:var(--accent3);border:1px solid rgba(67,233,123,0.3);}
+.badge-lose{background:rgba(255,107,107,0.12);color:var(--accent2);border:1px solid rgba(255,107,107,0.25);}
+.badge-tie{background:rgba(108,99,255,0.12);color:var(--accent);border:1px solid rgba(108,99,255,0.25);}
+.challenge-view-link{display:inline-flex;align-items:center;gap:6px;margin-top:0.6rem;font-size:12px;color:var(--accent);text-decoration:none;opacity:0.8;transition:opacity 0.2s;}
+.challenge-view-link:hover{opacity:1;}
 /* FSI number flash */
 @keyframes fsiFlash{0%{filter:brightness(1)}35%{filter:brightness(2.2) drop-shadow(0 0 24px currentColor)}100%{filter:brightness(1)}}
 .fsi-flash{animation:fsiFlash 0.7s ease both;}
@@ -575,6 +585,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
           </div>
         </div>
       </div>
+      <!-- Challenge responses (populated when logged in) -->
+      <div id="challenge-responses-wrap" style="display:none"></div>
       <!-- not-logged-in state -->
       <div id="challenge-guest" style="display:none">
         <a class="challenge-gen-btn" href="/login?next=/results" style="display:inline-block;text-decoration:none;text-align:center;padding:11px 22px">Login to Unlock Challenges</a>
@@ -590,7 +602,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
       </div>
       <a class="cta-secondary" href="/dashboard">Go to Dashboard</a>
       <button class="cta-share" onclick="shareResults()">Share My Score 📤</button>
-      <button class="cta-download" onclick="downloadScoreCard()">Download Score Card ⬇</button>
+
     </div>
 
   </div>
@@ -623,6 +635,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
 <!-- Main logic -->
 <script>
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 var SB_LEVELS=[
   {level:1,name:'Dormant',min:0},
   {level:2,name:'Awakening',min:100},
@@ -1007,10 +1020,67 @@ var _scoreData=null;
     // Challenge card — always visible when results are loaded
     var cc=document.getElementById('challenge-card');
     cc.style.display='block';
+    cc.style.transitionDelay='0s';
+    setTimeout(function(){cc.classList.add('appeared');},50);
     document.getElementById('challenge-sub').innerHTML='Your FSI is <strong>'+Math.round(parseFloat(d.fsi)||0)+'/100</strong> \u2014 '+(me.loggedIn?'think your friends can beat it?':'login to challenge a friend!');
     if(me.loggedIn){
       document.getElementById('challenge-logged-in').style.display='';
       document.getElementById('challenge-guest').style.display='none';
+      // Load latest challenge responses
+      fetch('/api/my-latest-challenge').then(function(r){return r.json();}).then(function(cd){
+        if(!cd.ok||!cd.challenge)return;
+        var ch=cd.challenge;
+        var wrap=document.getElementById('challenge-responses-wrap');
+        var challengeUrl=location.origin+'/challenge/'+ch.token;
+        if(cd.role==='responder'){
+          // Show comparison: my score vs challenger
+          var myFsi=cd.myFsi||0;
+          var beat=myFsi>ch.challengerFSI,tied=myFsi===ch.challengerFSI;
+          var verdict=beat?'🏆 You beat the challenge!':tied?'🤝 It\'s a tie!':'😤 They beat you — try again!';
+          var verdictColor=beat?'var(--accent3)':tied?'var(--accent)':'var(--accent2)';
+          var myColor=myFsi>=75?'var(--accent3)':myFsi>=50?'#FFB347':'var(--accent2)';
+          var theirColor=ch.challengerFSI>=75?'var(--accent3)':ch.challengerFSI>=50?'#FFB347':'var(--accent2)';
+          wrap.innerHTML='<div class="challenge-responses-section">'
+            +'<div class="challenge-responses-heading">Challenge Result</div>'
+            +'<div style="display:flex;justify-content:space-around;align-items:center;padding:0.75rem 0;gap:1rem;">'
+              +'<div style="text-align:center;">'
+                +'<div style="font-size:11px;color:var(--muted);margin-bottom:4px;">You</div>'
+                +'<div style="font-family:Syne,sans-serif;font-size:2.4rem;font-weight:800;color:'+myColor+';">'+myFsi+'</div>'
+              +'</div>'
+              +'<div style="font-family:Syne,sans-serif;font-size:1.2rem;font-weight:800;color:rgba(255,255,255,0.2);">VS</div>'
+              +'<div style="text-align:center;">'
+                +'<div style="font-size:11px;color:var(--muted);margin-bottom:4px;">'+escHtml(ch.challengerName)+'</div>'
+                +'<div style="font-family:Syne,sans-serif;font-size:2.4rem;font-weight:800;color:'+theirColor+';">'+ch.challengerFSI+'</div>'
+              +'</div>'
+            +'</div>'
+            +'<div style="text-align:center;font-family:Syne,sans-serif;font-size:14px;font-weight:700;color:'+verdictColor+';padding:6px 0;">'+verdict+'</div>'
+            +'<a class="challenge-view-link" href="'+challengeUrl+'" target="_blank">View full challenge page →</a>'
+            +'</div>';
+          wrap.style.display='block';
+        } else {
+          // Challenger: show all responses
+          if(!ch.responses||ch.responses.length===0)return;
+          var rows=ch.responses.map(function(r){
+            var beat=r.fsi>ch.challengerFSI,tied=r.fsi===ch.challengerFSI;
+            var badgeCls=beat?'badge-lose':tied?'badge-tie':'badge-win';
+            var badgeText=beat?'Beat you':tied?'Tied':'You won';
+            var scoreColor=r.fsi>=75?'var(--accent3)':r.fsi>=50?'#FFB347':'var(--accent2)';
+            return'<div class="challenge-response-row">'
+              +'<span class="challenge-response-name">'+escHtml(r.responderName||'Anonymous')+'</span>'
+              +'<span style="display:flex;align-items:center;gap:4px;">'
+              +'<span class="challenge-response-fsi" style="color:'+scoreColor+';">'+r.fsi+'</span>'
+              +'<span class="challenge-response-badge '+badgeCls+'">'+badgeText+'</span>'
+              +'</span>'
+              +'</div>';
+          }).join('');
+          wrap.innerHTML='<div class="challenge-responses-section">'
+            +'<div class="challenge-responses-heading">Challenge Responses (your score: '+ch.challengerFSI+')</div>'
+            +rows
+            +'<a class="challenge-view-link" href="'+challengeUrl+'" target="_blank">View full challenge page →</a>'
+            +'</div>';
+          wrap.style.display='block';
+        }
+      }).catch(function(){});
     } else {
       document.getElementById('challenge-logged-in').style.display='none';
       document.getElementById('challenge-guest').style.display='';
@@ -1039,7 +1109,7 @@ var _scoreData=null;
     // Hero
     var savedAt=d.savedAt?new Date(d.savedAt):new Date();
     document.getElementById('hero-date').textContent=savedAt.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-    var name=(d.isAnonymous||!d.participantName)?'Anonymous':d.participantName;
+    var name=me.loggedIn?me.username:((d.isAnonymous||!d.participantName)?'Anonymous':d.participantName);
     document.getElementById('hero-greeting').textContent=name+'\'s Focus Report';
 
     var metaHtml='';
@@ -1165,7 +1235,9 @@ var _scoreData=null;
 
 /* ── AI INSIGHTS ENGINE ── */
 /* ── SCORE CARD GENERATOR ── */
-function downloadScoreCard(){
+function downloadScoreCard(){}
+/*
+function _downloadScoreCard_removed(){
   var d=_scoreData;
   if(!d||d.fsi===undefined){return;}
   document.fonts.ready.then(function(){
@@ -1301,6 +1373,7 @@ function downloadScoreCard(){
     link.click();
   });
 }
+*/
 
 /* ══ SOUND ENGINE ══ */
 var _sfxCtx=null;
@@ -1433,7 +1506,7 @@ function showCelebBanner(fsi){
       }
     });
   },{threshold:0.07,rootMargin:'0px 0px -15px 0px'});
-  document.querySelectorAll('.card,.stat-card,.xp-card,.chart-card,.whatif-card,.ai-card,.two-col,.stat-row').forEach(function(el,i){
+  document.querySelectorAll('.card,.stat-card,.xp-card,.chart-card,.whatif-card,.ai-card,.challenge-card,.two-col,.stat-row').forEach(function(el,i){
     el.style.transitionDelay=(i*0.06)+'s';
     io.observe(el);
   });
@@ -1469,7 +1542,7 @@ function showCelebBanner(fsi){
 
 /* ══ BUTTON RIPPLE + SOUNDS ══ */
 (function(){
-  document.querySelectorAll('.cta-primary,.cta-secondary,.cta-share,.cta-download').forEach(function(btn){
+  document.querySelectorAll('.cta-primary,.cta-secondary,.cta-share').forEach(function(btn){
     btn.style.position='relative';btn.style.overflow='hidden';
     btn.addEventListener('click',function(e){
       playUIClick();

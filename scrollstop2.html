@@ -1416,6 +1416,7 @@ function updateAnonPreview(){
 
 // ═══ LEADERBOARD ═══
 var _myLbId=null;
+var _signedIn=false;
 var _lbColors=['#6C63FF','#FF6B6B','#43E97B','#00D2FF','#FFB347','#FF69B4','#7B68EE','#20B2AA'];
 function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 function loadLeaderboard(){
@@ -1455,6 +1456,11 @@ function loadLeaderboard(){
   });
 }
 function openLbModal(){
+  if(!_signedIn){
+    var loginBtn=document.querySelector('.ss-gate-btn-login');
+    if(loginBtn)window.location.href=loginBtn.href;
+    return;
+  }
   document.getElementById('lb-modal-overlay').classList.add('open');
   document.body.style.overflow='hidden';
   // load whichever tab is active
@@ -1512,12 +1518,23 @@ function loadXpLeaderboard(){
   });
 }
 function showRankBubble(){
-  document.getElementById('rank-bubble').classList.add('show');
+  var bubble=document.getElementById('rank-bubble');
+  if(!_signedIn){
+    var textEl=bubble.querySelector('.rank-bubble-text');
+    var subEl=bubble.querySelector('.rank-bubble-sub');
+    if(textEl)textEl.textContent='Sign in to join the leaderboard!';
+    if(subEl)subEl.textContent='Log in to save your result & compete →';
+    bubble.onclick=function(){
+      var loginBtn=document.querySelector('.ss-gate-btn-login');
+      if(loginBtn)window.location.href=loginBtn.href;
+    };
+  }
+  bubble.classList.add('show');
 }
 function closeRankBubble(){
   document.getElementById('rank-bubble').classList.remove('show');
 }
-setInterval(loadLeaderboard,5*60*1000);
+setInterval(function(){if(_signedIn)loadLeaderboard();},5*60*1000);
 
 // ═══ MISMATCH MODAL ═══
 var _mismatchCallback=null;
@@ -1649,7 +1666,6 @@ function submitForm(){
         if(signupBtn)signupBtn.href='/register?next='+claimNext;
         if(loginBtn)loginBtn.href='/login?next='+claimNext;
       }
-      loadLeaderboard();
       // If this was a challenge response, update the CTA button to go back to the challenge page
       if(_challengeToken){
         var ctaBtn=document.querySelector('a[href="/results"]');
@@ -1660,7 +1676,7 @@ function submitForm(){
         }
       }
     })
-    .catch(function(){loadLeaderboard();});
+    .catch(function(){});
 
   document.getElementById('main-form').style.display='none';
   var ss=document.getElementById('success-screen');ss.classList.add('visible');
@@ -1692,9 +1708,12 @@ function submitForm(){
   // Auth gate: blur results for non-logged-in users
   fetch('/api/me').then(function(r){return r.json();}).then(function(me){
     if(!me.loggedIn){
+      _signedIn=false;
       document.getElementById('success-screen').classList.add('ss-blurred');
       document.getElementById('ss-gate').classList.add('visible');
     } else {
+      _signedIn=true;
+      loadLeaderboard();
       fetch('/api/my-progress').then(function(r){return r.json();}).then(function(prog){
         var isRecurring=prog.loggedIn&&prog.lastLogDate&&prog.streak>0;
         if(isRecurring){
@@ -1704,6 +1723,7 @@ function submitForm(){
       }).catch(function(){});
     }
   }).catch(function(){
+    _signedIn=false;
     document.getElementById('success-screen').classList.add('ss-blurred');
     document.getElementById('ss-gate').classList.add('visible');
   });

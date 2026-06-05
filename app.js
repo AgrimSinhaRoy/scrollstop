@@ -64,6 +64,7 @@ const submissionSchema = new mongoose.Schema({
   savedAt:         mongoose.Schema.Types.Mixed,
   studyHours:      mongoose.Schema.Types.Mixed,
   phoneChecks:     mongoose.Schema.Types.Mixed,
+  challengeToken:  String,
 }, { versionKey: false });
 
 const challengeSchema = new mongoose.Schema({
@@ -307,6 +308,8 @@ app.post('/survey/submit', async (req, res) => {
       const fsi = parseFloat(doc.fsi);
       if (isNaN(fsi)) return;
       await Challenge.updateOne({ token: ct }, { $push: { responses: { responderName, fsi, respondedAt: new Date().toISOString() } } });
+      // Store token on submission so responder can find their result later
+      await Submission.updateOne({ id: sub.id }, { $set: { challengeToken: ct } });
     } catch (e) { console.error('Challenge auto-post error:', e.message); }
   })();
 });
@@ -419,16 +422,11 @@ app.get('/api/my-latest-submission', async (req, res) => {
 
 // ── GET /api/leaderboard ──────────────────────────────────────
 app.get('/api/leaderboard', async (req, res) => {
-  const subs = await Submission.find({ fsi: { $ne: null, $exists: true } }).sort({ fsi: -1 }).limit(200);
+  const subs = await Submission.find({ userId: { $exists: true }, fsi: { $ne: null, $exists: true } }).sort({ fsi: -1 }).limit(200);
   const seen = new Map();
   for (const s of subs) {
-    let displayName = 'Anonymous';
-    if (s.userId) {
-      const u = await User.findOne({ id: s.userId });
-      displayName = u ? u.username : (s.username || 'Anonymous');
-    } else if (!s.isAnonymous && s.participantName) {
-      displayName = s.participantName;
-    }
+    const u = await User.findOne({ id: s.userId });
+    const displayName = u ? u.username : (s.username || 'Unknown');
     if (!seen.has(displayName) || (parseInt(s.fsi) || 0) > seen.get(displayName).fsi) {
       seen.set(displayName, { id: s.id, displayName, grade: s.grade || null, school: s.school || null, fsi: parseInt(s.fsi) || 0, timestamp: s.timestamp });
     }
@@ -445,16 +443,7 @@ app.get('/api/xp-leaderboard', async (req, res) => {
     const latestSub = await Submission.findOne({ userId: u.id, fsi: { $ne: null } }).sort({ timestamp: -1 });
     entries.push({ id: u.id, displayName: u.username, fsi: latestSub ? (parseInt(latestSub.fsi) || 0) : 0, xp: u.xp || 0, streak: u.streak || 0, level: u.level || 1, levelName: u.levelName || 'Dormant', isRegistered: true });
   }
-  const anonSubs = await Submission.find({ userId: { $exists: false }, fsi: { $ne: null }, xp: { $gt: 0 } }).sort({ xp: -1 }).limit(50);
-  const anonSeen = new Map();
-  for (const s of anonSubs) {
-    const key = (!s.isAnonymous && s.participantName) ? s.participantName : ('anon_' + s.id);
-    const xp = parseInt(s.xp) || 0;
-    if (!anonSeen.has(key) || xp > anonSeen.get(key).xp) {
-      anonSeen.set(key, { id: s.id, displayName: (!s.isAnonymous && s.participantName) ? s.participantName : 'Anonymous', fsi: parseInt(s.fsi) || 0, xp, streak: parseInt(s.streak) || 0, level: parseInt(s.level) || 1, levelName: s.levelName || 'Dormant', isRegistered: false });
-    }
-  }
-  const combined = [...entries, ...anonSeen.values()].sort((a, b) => b.xp - a.xp || b.fsi - a.fsi).slice(0, 50);
+  const combined = [...entries].sort((a, b) => b.xp - a.xp || b.fsi - a.fsi).slice(0, 50);
   res.json(combined);
 });
 
@@ -561,6 +550,21 @@ app.post('/api/challenge/:token/respond', async (req, res) => {
   if (isNaN(fsi) || fsi < 0 || fsi > 100) return res.status(400).json({ error: 'Invalid FSI' });
   await Challenge.updateOne({ token: req.params.token }, { $push: { responses: { responderName, fsi, respondedAt: new Date().toISOString() } } });
   res.json({ ok: true, challengerFSI: c.challengerFSI, responderFSI: fsi, won: fsi > c.challengerFSI, tied: fsi === c.challengerFSI });
+});
+
+// ── GET /api/my-latest-challenge ────────────────────────────
+app.get('/api/my-latest-challenge', async (req, res) => {
+  if (!req.session.userId) return res.json({ ok: false });
+  // Case 1: user created a challenge
+  const created = await Challenge.findOne({ challengerId: req.session.userId }).sort({ createdAt: -1 });
+  if (created) return res.json({ ok: true, challenge: created, role: 'challenger' });
+  // Case 2: user responded to a challenge (token stored on their submission)
+  const sub = await Submission.findOne({ userId: req.session.userId, challengeToken: { $exists: true, $ne: null } }).sort({ timestamp: -1 }).lean();
+  if (sub && sub.challengeToken) {
+    const challenge = await Challenge.findOne({ token: sub.challengeToken });
+    if (challenge) return res.json({ ok: true, challenge, role: 'responder', myFsi: parseFloat(sub.fsi) || 0 });
+  }
+  return res.json({ ok: false, none: true });
 });
 
 // ── Legacy EJS views (goals/log/insights) ────────────────────

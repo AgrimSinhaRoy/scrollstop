@@ -100,11 +100,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .winner-banner.tie{background:linear-gradient(135deg,rgba(108,99,255,0.12),rgba(0,210,255,0.06));border:1px solid rgba(108,99,255,0.25);color:var(--accent);}
 
 /* RESPONDER NAME */
-.responder-name-wrap{width:100%;background:rgba(10,12,26,0.8);border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:1.5rem;}
-.responder-name-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:0.75rem;}
-.responder-name-input{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(108,99,255,0.3);border-radius:10px;padding:10px 14px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color 0.2s;}
-.responder-name-input:focus{border-color:rgba(108,99,255,0.6);}
-.responder-name-note{font-size:12px;color:var(--muted);margin-top:6px;}
+
 
 .btn-primary{display:inline-flex;align-items:center;padding:12px 28px;background:linear-gradient(135deg,var(--accent),#a78bfa);border:none;border-radius:12px;color:#fff;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;cursor:pointer;transition:opacity 0.2s,transform 0.15s;text-decoration:none;}
 .btn-primary:hover{opacity:0.88;transform:translateY(-1px);}
@@ -219,12 +215,6 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
       </div>
     </div>
 
-    <!-- RESPONDER NAME (shown on fresh challenge, before survey) -->
-    <div class="responder-name-wrap" id="responder-name-wrap">
-      <div class="responder-name-title">Your name for the results board</div>
-      <input class="responder-name-input" id="responder-name-input" type="text" maxlength="40" placeholder="Enter your name (optional)">
-      <p class="responder-name-note">This will be shown alongside your score if you beat the challenge.</p>
-    </div>
 
   </div>
 </div>
@@ -304,9 +294,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
       var surveyBtn = document.getElementById('take-survey-btn');
       surveyBtn.addEventListener('click', function(e){
         e.preventDefault();
-        var name = (document.getElementById('responder-name-input').value||'').trim();
         var url = '/survey?challenge=' + encodeURIComponent(token);
-        if(name) url += '&responder=' + encodeURIComponent(name);
         location.href = url;
       });
 
@@ -324,7 +312,6 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
     });
 
   function showComparison(challengerName, challengerFSI, responderName, responderFSI, won, tied){
-    document.getElementById('responder-name-wrap').style.display = 'none';
     document.getElementById('comp-challenger-name').textContent = challengerName;
     document.getElementById('comp-challenger-fsi').textContent = challengerFSI;
     document.getElementById('comp-responder-name').textContent = responderName || 'You';
