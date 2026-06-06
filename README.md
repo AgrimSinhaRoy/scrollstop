@@ -5,11 +5,7 @@
 <p><strong>Know your screen. Own your focus.</strong></p>
 
 <p>
-  A science-fair-grade, full-stack web app that turns your screen time habits into a personalised <strong>Focus Score Index (FSI)</strong> — then lets you challenge your friends to beat it.
-</p>
-
-<p>
-  Built for the <strong>IRIS National Science Fair</strong> by Agrim Sinha Roy.
+  A full-stack web app that turns your screen time habits into a personalised <strong>Focus Score Index (FSI)</strong> — then lets you challenge your friends to beat it.
 </p>
 
 <br/>
@@ -24,7 +20,6 @@
 
 - [Overview](#overview)
 - [Features](#features)
-- [Screenshots](#screenshots)
 - [Tech Stack](#tech-stack)
 - [Getting Started](#getting-started)
 - [Project Structure](#project-structure)
@@ -77,12 +72,6 @@ Scores are anonymous by default. Sign up to claim your score, appear on the **gl
 - Global stats overview (total users, submissions, average FSI)
 - User management — promote to admin, ban accounts
 - Protected behind admin-only middleware
-
----
-
-## Screenshots
-
-![ScrollBye product screenshot](public/screenshots/scrollbye.png)
 
 ---
 
