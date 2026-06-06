@@ -1,0 +1,86 @@
+name: Deploy to AWS Elastic Beanstalk
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:        # allow manual trigger from GitHub UI
+
+env:
+  APP_NAME:  Scrollbye
+  ENV_NAME:  Scrollbye-dev
+  AWS_REGION: ap-south-1
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      # ── 2. AWS credentials ───────────────────────────────────────────────────
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
+
+      # ── 3. Create deployment zip ─────────────────────────────────────────────
+      #   Excludes: .git, node_modules (EB installs them), .env, local docs
+      - name: Create deployment package
+        run: |
+          zip -r deploy.zip . \
+            --exclude "*.git*" \
+            --exclude "node_modules/*" \
+            --exclude ".env" \
+            --exclude "docs/*" \
+            --exclude "*.log"
+
+      # ── 4. Upload zip to the EB S3 bucket ────────────────────────────────────
+      - name: Upload package to S3
+        id: upload
+        run: |
+          VERSION_LABEL="scrollbye-${GITHUB_SHA::8}-$(date +%s)"
+          echo "version=$VERSION_LABEL" >> "$GITHUB_OUTPUT"
+          aws s3 cp deploy.zip "s3://${{ secrets.EB_S3_BUCKET }}/${VERSION_LABEL}.zip"
+
+      # ── 5. Register a new application version ────────────────────────────────
+      - name: Create EB application version
+        run: |
+          aws elasticbeanstalk create-application-version \
+            --application-name "${{ env.APP_NAME }}" \
+            --version-label    "${{ steps.upload.outputs.version }}" \
+            --source-bundle    S3Bucket="${{ secrets.EB_S3_BUCKET }}",S3Key="${{ steps.upload.outputs.version }}.zip" \
+            --no-auto-create-application
+
+      # ── 6. Deploy version + sync environment variables ───────────────────────
+      #   Secrets → EB environment properties (replaces .env on the server)
+      - name: Deploy version & inject environment variables
+        run: |
+          aws elasticbeanstalk update-environment \
+            --environment-name "${{ env.ENV_NAME }}" \
+            --version-label    "${{ steps.upload.outputs.version }}" \
+            --option-settings \
+              "Namespace=aws:elasticbeanstalk:application:environment,OptionName=MONGODB_URI,Value=${{ secrets.MONGODB_URI }}" \
+              "Namespace=aws:elasticbeanstalk:application:environment,OptionName=SESSION_SECRET,Value=${{ secrets.SESSION_SECRET }}" \
+              "Namespace=aws:elasticbeanstalk:application:environment,OptionName=NODE_ENV,Value=production"
+
+      # ── 7. Wait for rollout ───────────────────────────────────────────────────
+      - name: Wait for environment to reach Ready state
+        run: |
+          echo "Waiting for Elastic Beanstalk environment to become Ready..."
+          aws elasticbeanstalk wait environment-updated \
+            --environment-names "${{ env.ENV_NAME }}"
+          echo "Deployment complete."
+
+      # ── 8. Print live URL ─────────────────────────────────────────────────────
+      - name: Print environment URL
+        run: |
+          URL=$(aws elasticbeanstalk describe-environments \
+            --environment-names "${{ env.ENV_NAME }}" \
+            --query "Environments[0].CNAME" \
+            --output text)
+          echo "Live at: http://$URL"
