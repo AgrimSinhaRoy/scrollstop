@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#04050d">
 <title>ScrollBye — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
@@ -63,6 +65,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .nav-brand{display:flex;align-items:center;gap:6px;text-decoration:none;}
 .nav-brand-text{font-family:'Syne',sans-serif;font-weight:800;font-size:17px;color:var(--text);}
 .nav-links{display:flex;align-items:center;gap:0.25rem;}
+.nav-hamburger{display:none;background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text);padding:6px 10px;font-size:18px;cursor:pointer;}
 .nav-link{
   padding:6px 14px;border-radius:8px;font-size:13px;font-weight:500;
   color:var(--muted);text-decoration:none;transition:all 0.2s;
@@ -83,7 +86,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 /* PAGE LAYOUT */
 .page-wrap{
   position:relative;z-index:1;
-  max-width:1100px;margin:0 auto;padding:100px 2rem 4rem;
+  max-width:1100px;margin:0 auto;padding:80px 1rem 3rem;
 }
 
 /* SECTION LABEL */
@@ -213,9 +216,18 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem;}
 @media(max-width:700px){.two-col{grid-template-columns:1fr;}.stat-row{grid-template-columns:1fr 1fr;}}
 @media(max-width:600px){
+  *,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.1s!important;}
   .navbar{padding:0 1.25rem;}
   .nav-links{display:none;}
+  .nav-links.mobile-open{display:flex;flex-direction:column;position:fixed;top:64px;left:0;right:0;background:rgba(4,5,13,0.97);backdrop-filter:blur(20px);padding:1rem;gap:4px;border-bottom:1px solid var(--border);z-index:99;}
+  .nav-hamburger{display:block;}
   .orb{display:none;}
+  #star-canvas{display:none;}
+  .grid-overlay{display:none;}
+  .page-wrap{padding:72px 0.75rem 2rem;}
+  .stat-row,.two-col{grid-template-columns:1fr!important;}
+  .card,.stat-card,.xp-card,.chart-card{padding:1rem;}
+  body{font-size:14px;}
 }
 
 /* Insights */
@@ -319,6 +331,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
     <a href="/profile" id="nav-avatar-wrap"></a>
     <a class="nav-logout-btn" href="/auth/logout">Logout</a>
   </div>
+  <button class="nav-hamburger" id="nav-hamburger" onclick="toggleMobileNav()" aria-label="Menu">☰</button>
 </nav>
 
 <!-- ═══ NEW USER STATE ═══ -->
@@ -479,8 +492,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   var W=0,H=0,stars=[];
   function resize(){W=c.width=window.innerWidth;H=c.height=window.innerHeight;}
   function mkStar(){return{x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.2+0.2,a:Math.random(),da:(Math.random()-0.5)*0.004+0.001};}
-  window.addEventListener('resize',function(){resize();stars=[];for(var i=0;i<180;i++)stars.push(mkStar());});
-  resize();for(var i=0;i<180;i++)stars.push(mkStar());
+  window.addEventListener('resize',function(){resize();var n=window.innerWidth<600?40:180;stars=[];for(var i=0;i<n;i++)stars.push(mkStar());});
+  var n=window.innerWidth<600?40:180;resize();for(var i=0;i<n;i++)stars.push(mkStar());
   function draw(){
     ctx.clearRect(0,0,W,H);
     for(var i=0;i<stars.length;i++){
@@ -492,6 +505,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   }
   draw();
 })();
+function toggleMobileNav(){document.querySelector('.nav-links').classList.toggle('mobile-open');}
 </script>
 
 <!-- XP + Level data (same as scrollstop2.html) -->
@@ -589,6 +603,11 @@ function renderFsiLeaderboard(lb, username){
 function loadXpLeaderboard(username){
   fetch('/api/xp-leaderboard').then(function(r){return r.json();}).then(function(lb){
     var skel=document.getElementById('lb-xp-skel');if(skel)skel.style.display='none';
+    // Update XP rank card
+    var xpRank='#'+lb.length+'+';
+    for(var ri=0;ri<lb.length;ri++){if(lb[ri].displayName===username){xpRank='#'+(ri+1);break;}}
+    document.getElementById('rank-num').textContent=xpRank;
+    document.getElementById('rank-sub').textContent='out of '+lb.length+' logged participants';
     var list=document.getElementById('lb-xp-list');if(!list)return;
     list.innerHTML='';
     lb.slice(0,10).forEach(function(e,i){
@@ -605,6 +624,8 @@ function loadXpLeaderboard(username){
     });
     list.style.display='';
   }).catch(function(){
+    document.getElementById('rank-num').textContent='#—';
+    document.getElementById('rank-sub').textContent='Unavailable';
     var skel=document.getElementById('lb-xp-skel');if(skel)skel.style.display='none';
     var err=document.getElementById('lb-xp-err');if(err)err.style.display='';
   });
@@ -618,6 +639,8 @@ function loadXpLeaderboard(username){
     .then(function(results){
       var me=results[0];var prog=results[1];var subsData=results[2];
       if(!me.loggedIn){location.href='/login?next=/dashboard';return;}
+      // Inject Challenges nav link
+      (function(){var nav=document.querySelector('.nav-links');if(nav&&!nav.querySelector('[href="/challenges"]')){var cl=document.createElement('a');cl.className='nav-link';cl.href='/challenges';cl.textContent='Challenges';nav.insertBefore(cl,nav.children[Math.min(2,nav.children.length)]);}}());
       // Render avatar or initial circle in nav
       var navAw=document.getElementById('nav-avatar-wrap');
       if(navAw){navAw.innerHTML=me.avatar?'<img class="nav-avatar" src="'+me.avatar+'" alt="avatar">':
@@ -695,6 +718,7 @@ function loadXpLeaderboard(username){
         },
         options:{
           responsive:true,maintainAspectRatio:false,
+          animation:{duration:400},
           plugins:{legend:{display:false}},
           scales:{
             x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'rgba(220,220,255,0.4)',font:{size:11}}},
@@ -721,18 +745,11 @@ function loadXpLeaderboard(username){
       var ctaWrap=document.getElementById('log-cta-wrap');
       if(loggedToday&&ctaWrap)ctaWrap.style.display='none';
 
-      // Leaderboard rank + full table
+      // FSI leaderboard table
       fetch('/api/leaderboard').then(function(r){return r.json();}).then(function(lb){
-        var rank='#'+lb.length+'+';
-        for(var i=0;i<lb.length;i++){
-          if(lb[i].displayName===me.username){rank='#'+(i+1);break;}
-        }
-        document.getElementById('rank-num').textContent=rank;
-        document.getElementById('rank-sub').textContent='out of '+lb.length+' logged participants';
         document.getElementById('lb-total-count').textContent=lb.length+' participants';
         renderFsiLeaderboard(lb,me.username);
       }).catch(function(){
-        document.getElementById('rank-sub').textContent='Leaderboard unavailable';
         var skel=document.getElementById('lb-fsi-skel');if(skel)skel.style.display='none';
         var err=document.getElementById('lb-fsi-err');if(err)err.style.display='';
       });

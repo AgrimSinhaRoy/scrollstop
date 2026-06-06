@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#04050d">
+<title>Challenges — ScrollBye</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#04050d;--surface:#0a0c1a;--surface2:#111326;
+  --border:rgba(255,255,255,0.06);--border-hover:rgba(108,99,255,0.4);
+  --accent:#6C63FF;--accent2:#FF6B6B;--accent3:#43E97B;--accent4:#00D2FF;
+  --text:#EEEEFF;--muted:rgba(220,220,255,0.42);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden;}
+
+/* ── KEYFRAMES: transform+opacity only (GPU safe) ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes letterIn{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
+@keyframes meshRotate{from{transform:translate(-50%,-50%) rotate(0deg) scale(1.5)}to{transform:translate(-50%,-50%) rotate(360deg) scale(1.5)}}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes od1{0%{transform:translate(0,0)}100%{transform:translate(70px,90px)}}
+@keyframes od2{0%{transform:translate(0,0)}100%{transform:translate(-60px,-70px)}}
+@keyframes od3{0%{transform:translate(0,0)}100%{transform:translate(-50px,60px)}}
+@keyframes haloBreath{0%,100%{transform:scale(1);opacity:0.5}50%{transform:scale(1.15);opacity:0.9}}
+@keyframes orbitDot{0%{transform:translateY(-50%) rotate(0deg) translateX(46px) rotate(0deg)}100%{transform:translateY(-50%) rotate(360deg) translateX(46px) rotate(-360deg)}}
+@keyframes orbitDot2{0%{transform:translateY(-50%) rotate(0deg) translateX(46px) rotate(0deg)}100%{transform:translateY(-50%) rotate(360deg) translateX(46px) rotate(-360deg)}}
+@keyframes scanline{0%{top:-100%}100%{top:200%}}
+@keyframes tabIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
+
+/* ── BACKGROUND ── */
+#star-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0;animation:fadeIn 0.5s ease 0.2s both;}
+.grid-overlay{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(108,99,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(108,99,255,0.025) 1px,transparent 1px);background-size:80px 80px;}
+.orb{position:fixed;border-radius:50%;pointer-events:none;z-index:0;}
+.orb1{width:700px;height:700px;background:radial-gradient(circle,rgba(108,99,255,0.16),transparent 70%);top:-250px;left:-250px;animation:od1 22s ease-in-out infinite alternate;will-change:transform;}
+.orb2{width:500px;height:500px;background:radial-gradient(circle,rgba(255,107,107,0.11),transparent 70%);bottom:-120px;right:-120px;animation:od2 28s ease-in-out infinite alternate;will-change:transform;}
+.orb3{width:400px;height:400px;background:radial-gradient(circle,rgba(0,210,255,0.09),transparent 70%);top:45%;left:55%;animation:od3 20s ease-in-out infinite alternate;will-change:transform;}
+
+/* ── LOGO ── */
+.nav-logo-wrap{position:relative;display:inline-block;width:52px;height:52px;flex-shrink:0;}
+.nav-logo-inner{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0.52);transform-origin:center center;width:100px;height:100px;}
+.logo-glow-nav{position:absolute;inset:-20px;border-radius:50%;background:radial-gradient(circle,rgba(108,99,255,0.25),transparent 70%);opacity:0.6;pointer-events:none;animation:haloBreath 3s ease-in-out infinite;}
+.logo-svg-wrap{position:relative;width:100px;height:100px;display:flex;align-items:center;justify-content:center;}
+.logo-ring{position:absolute;border-radius:50%;border:1.5px solid transparent;}
+.lr1{inset:0;border-color:rgba(108,99,255,0.7) transparent transparent transparent;animation:spin 3.5s linear infinite;}
+.lr2{inset:10px;border-color:transparent rgba(0,210,255,0.6) transparent transparent;animation:spin 5s linear infinite reverse;}
+.lr3{inset:20px;border-color:rgba(67,233,123,0.5) transparent transparent transparent;animation:spin 8s linear infinite;}
+.logo-core-circle{position:absolute;inset:28px;border-radius:50%;background:linear-gradient(135deg,#1a1040,#0a2040);border:2px solid rgba(108,99,255,0.5);display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px rgba(108,99,255,0.2),0 0 30px rgba(108,99,255,0.5),0 0 60px rgba(108,99,255,0.2),inset 0 1px 0 rgba(255,255,255,0.15);overflow:hidden;}
+.logo-icon-svg{width:26px;height:26px;position:relative;z-index:1;}
+.logo-core-circle::after{content:'';position:absolute;top:-100%;left:0;right:0;height:100%;background:linear-gradient(transparent,rgba(108,99,255,0.15),transparent);animation:scanline 3s ease-in-out infinite;}
+.logo-orbit-dot{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--accent3);box-shadow:0 0 12px var(--accent3);top:50%;left:0;transform-origin:50px 0;animation:orbitDot 4s linear infinite;}
+.logo-orbit-dot2{position:absolute;width:6px;height:6px;border-radius:50%;background:var(--accent2);box-shadow:0 0 10px var(--accent2);top:50%;left:0;transform-origin:50px 0;animation:orbitDot2 6s linear infinite reverse;}
+
+/* ── NAVBAR ── */
+.navbar{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 2.5rem;height:64px;background:rgba(4,5,13,0.7);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
+.nav-brand{display:flex;align-items:center;gap:6px;text-decoration:none;}
+.nav-brand-text{font-family:'Syne',sans-serif;font-weight:800;font-size:17px;color:var(--text);}
+.nav-links{display:flex;align-items:center;gap:0.25rem;}
+.nav-hamburger{display:none;background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text);padding:6px 10px;font-size:18px;cursor:pointer;}
+.nav-link{padding:6px 14px;border-radius:8px;font-size:13px;font-weight:500;color:var(--muted);text-decoration:none;transition:all 0.2s;}
+.nav-link:hover{color:var(--text);background:rgba(255,255,255,0.04);}
+.nav-link.active{color:var(--text);background:rgba(108,99,255,0.15);border:1px solid rgba(108,99,255,0.3);}
+.nav-right{display:flex;align-items:center;gap:10px;}
+.nav-avatar{width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid rgba(108,99,255,0.4);flex-shrink:0;}
+.nav-avatar-initial{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent4));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:white;border:2px solid rgba(108,99,255,0.4);flex-shrink:0;cursor:pointer;text-decoration:none;}
+.nav-logout-btn{padding:7px 18px;border-radius:100px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;background:transparent;border:1px solid rgba(255,107,107,0.35);color:rgba(255,150,150,0.8);cursor:pointer;transition:all 0.2s;text-decoration:none;}
+.nav-logout-btn:hover{background:rgba(255,107,107,0.12);border-color:var(--accent2);color:#fff;}
+
+/* ── LAYOUT ── */
+.page-wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:80px 1.25rem 4rem;}
+
+/* ── LOADING ── */
+#ch-loading{position:fixed;inset:0;z-index:200;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
+.spinner{width:44px;height:44px;border-radius:50%;border:3px solid rgba(108,99,255,0.2);border-top-color:var(--accent);animation:spin 0.8s linear infinite;}
+.loading-text{font-family:'Syne',sans-serif;font-size:14px;color:var(--muted);}
+
+/* ── HERO ── */
+.hero-card{
+  position:relative;overflow:hidden;
+  border:1px solid rgba(108,99,255,0.25);border-radius:28px;
+  padding:3.5rem 2.5rem 3rem;margin-bottom:1.5rem;
+  cursor:default;
+  transition:transform 0.12s ease;
+  will-change:transform;
+}
+.hero-mesh{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;}
+.hero-mesh::before{
+  content:'';position:absolute;top:50%;left:50%;
+  width:200%;height:200%;
+  background:conic-gradient(from 0deg at 50% 50%,rgba(108,99,255,0.14) 0deg,rgba(0,210,255,0.09) 90deg,rgba(255,107,107,0.07) 180deg,rgba(67,233,123,0.09) 270deg,rgba(108,99,255,0.14) 360deg);
+  animation:meshRotate 30s linear infinite;
+  opacity:0.15;will-change:transform;
+}
+.hero-content{position:relative;z-index:1;}
+.hero-eyebrow{font-size:11px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:0.9rem;display:block;opacity:0;animation:fadeIn 0.4s ease 0.2s both;}
+.hero-heading{
+  font-family:'Syne',sans-serif;font-weight:800;
+  font-size:clamp(28px,5.5vw,56px);line-height:1.3;letter-spacing:-1px;
+  margin-bottom:1rem;display:block;overflow:visible;white-space:nowrap;
+}
+.hero-heading .letter{
+  display:inline-block;
+  background:linear-gradient(135deg,#fff 0%,rgba(200,195,255,0.9) 50%,rgba(108,99,255,0.85) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  padding-bottom:0.25em;line-height:1.3;overflow:visible;
+  opacity:0;animation:letterIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both;
+  will-change:transform,opacity;
+}
+.hero-heading .letter.space{-webkit-text-fill-color:transparent;background:none;}
+.hero-sub{font-size:16px;color:var(--muted);line-height:1.6;opacity:0;animation:fadeIn 0.5s ease 0.75s both;}
+
+/* ── STATS ROW ── */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:1.5rem;}
+.stat-card{
+  position:relative;overflow:hidden;
+  background:rgba(10,12,26,0.8);border:1px solid var(--border);border-radius:20px;
+  padding:1.4rem 1.25rem;
+  opacity:0;animation:fadeUp 0.5s ease both;
+}
+.stat-card:nth-child(1){animation-delay:0.35s;}
+.stat-card:nth-child(2){animation-delay:0.45s;}
+.stat-card:nth-child(3){animation-delay:0.55s;}
+.stat-card::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.07),transparent);transition:left 0.55s ease;pointer-events:none;}
+.stat-card:hover::after{left:100%;}
+.stat-icon{font-size:1.3rem;margin-bottom:0.5rem;}
+.stat-val{font-family:'Syne',sans-serif;font-weight:800;font-size:2.2rem;line-height:1;margin-bottom:3px;background:linear-gradient(135deg,#fff,rgba(180,175,255,0.8));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.stat-lbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);}
+
+/* ── CREATE CARD ── */
+.create-card{
+  position:relative;overflow:hidden;
+  background:linear-gradient(135deg,rgba(108,99,255,0.12) 0%,rgba(0,210,255,0.06) 100%);
+  border:1px solid rgba(108,99,255,0.4);border-radius:24px;
+  padding:2rem 1.75rem;margin-bottom:1.5rem;
+  opacity:0;animation:fadeUp 0.5s ease 0.5s both;
+}
+.create-card::before{content:'';position:absolute;top:0;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,rgba(108,99,255,0.85),rgba(0,210,255,0.5),transparent);pointer-events:none;}
+.create-trophy{font-size:3rem;margin-bottom:0.75rem;display:block;}
+.create-title{font-family:'Syne',sans-serif;font-weight:700;font-size:1.2rem;color:var(--text);margin-bottom:0.4rem;}
+.create-desc{font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:1.5rem;max-width:480px;}
+
+/* ── GENERATE BUTTON ── */
+.gen-btn{
+  position:relative;overflow:hidden;
+  display:inline-flex;align-items:center;gap:10px;
+  padding:14px 36px;border-radius:50px;
+  font-family:'Syne',sans-serif;font-size:16px;font-weight:800;
+  background:linear-gradient(135deg,var(--accent),var(--accent4));
+  color:#fff;border:none;cursor:pointer;
+  transition:opacity 0.2s,transform 0.2s;
+  box-shadow:0 4px 30px rgba(108,99,255,0.4);
+}
+.gen-btn:hover{opacity:0.88;transform:translateY(-2px);}
+.gen-btn:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+.gen-btn::after{content:'';position:absolute;top:-50%;left:-60%;width:40%;height:200%;background:rgba(255,255,255,0.18);transform:skewX(-20deg);transition:left 0.5s ease;pointer-events:none;}
+.gen-btn:hover::after{left:120%;}
+
+/* ── NO DATA MSG ── */
+#no-data-msg{display:none;margin-top:1rem;padding:0.9rem 1.1rem;border-radius:12px;background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.25);font-size:13px;color:rgba(255,180,180,0.9);}
+#no-data-msg a{color:var(--accent4);text-decoration:underline;}
+
+/* ── LINK RESULT (slide-down reveal) ── */
+#link-result{overflow:hidden;max-height:0;opacity:0;transition:max-height 0.45s ease,opacity 0.35s ease,margin-top 0.35s ease;margin-top:0;}
+#link-result.open{max-height:500px;opacity:1;margin-top:1.5rem;}
+.link-result-label{font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+.link-box{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:0.85rem 1rem;border-radius:14px;background:rgba(255,255,255,0.04);border:1px solid rgba(108,99,255,0.3);}
+.link-text{flex:1;min-width:0;font-size:12px;color:rgba(220,220,255,0.8);word-break:break-all;font-family:monospace;}
+.copy-btn{padding:6px 16px;border-radius:100px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;background:rgba(108,99,255,0.2);border:1px solid rgba(108,99,255,0.4);color:#fff;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+.copy-btn:hover{background:rgba(108,99,255,0.35);}
+.wa-btn{padding:6px 14px;border-radius:100px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;background:rgba(37,211,102,0.12);border:1px solid rgba(37,211,102,0.3);color:#25D366;cursor:pointer;transition:all 0.2s;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center;gap:4px;}
+.wa-btn:hover{background:rgba(37,211,102,0.22);}
+
+/* ── SHARE PREVIEW CARD ── */
+.share-preview{
+  margin-top:12px;padding:0.9rem 1rem;border-radius:14px;
+  background:rgba(10,12,26,0.9);border:1px solid rgba(108,99,255,0.2);
+  display:flex;align-items:center;gap:12px;
+  transform:scale(0.96);opacity:0;
+  transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1),opacity 0.3s ease;
+}
+.share-preview.show{transform:scale(1);opacity:1;}
+.sp-logo{font-size:1.5rem;flex-shrink:0;}
+.sp-text{flex:1;min-width:0;}
+.sp-headline{font-family:'Syne',sans-serif;font-weight:700;font-size:13px;color:var(--text);margin-bottom:2px;}
+.sp-url{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:monospace;}
+
+/* ── TABS ── */
+.tabs-section{opacity:0;animation:fadeUp 0.5s ease 0.65s both;}
+.tab-bar{display:flex;gap:4px;margin-bottom:1.25rem;padding:4px;background:rgba(255,255,255,0.03);border-radius:50px;border:1px solid var(--border);width:fit-content;flex-wrap:nowrap;}
+.lb-tab{background:transparent;border:none;border-radius:100px;padding:7px 22px;color:var(--muted);font-family:'Syne',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.25s ease;white-space:nowrap;}
+.lb-tab:hover{color:var(--text);}
+.lb-tab.active{background:linear-gradient(135deg,var(--accent),var(--accent4));color:#fff;}
+.tab-pane{display:none;}
+
+/* ── CHALLENGE CARDS ── */
+.ch-card{
+  position:relative;overflow:hidden;
+  background:rgba(10,12,26,0.65);border:1px solid var(--border);border-radius:16px;
+  padding:1.1rem 1.2rem;margin-bottom:10px;
+  display:flex;align-items:center;gap:12px;
+  opacity:0;animation:fadeUp 0.4s ease both;
+  transition:border-color 0.2s,background 0.2s;
+}
+.ch-card:hover{border-color:rgba(108,99,255,0.3);}
+.ch-card::after{content:'';position:absolute;top:0;left:-80%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.04),transparent);transition:left 0.6s ease;pointer-events:none;}
+.ch-card:hover::after{left:150%;}
+/* Win/loss colours */
+.ch-card.card-won{border-color:rgba(67,233,123,0.35);background:rgba(67,233,123,0.05);}
+.ch-card.card-lost{border-color:rgba(255,107,107,0.28);background:rgba(255,107,107,0.04);}
+.ch-card.card-tied{border-color:rgba(108,99,255,0.35);background:rgba(108,99,255,0.06);}
+.ch-main{flex:1;min-width:0;}
+.ch-date{font-size:11px;color:var(--muted);margin-bottom:4px;}
+.ch-row-info{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.fsi-badge{font-family:'Syne',sans-serif;font-weight:800;font-size:13px;padding:3px 10px;border-radius:100px;}
+.fsi-green{background:rgba(67,233,123,0.12);border:1px solid rgba(67,233,123,0.3);color:var(--accent3);}
+.fsi-amber{background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);color:#F59E0B;}
+.fsi-red{background:rgba(255,107,107,0.12);border:1px solid rgba(255,107,107,0.3);color:var(--accent2);}
+.resp-count{font-size:12px;color:var(--muted);}
+.status-badge{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;text-transform:uppercase;letter-spacing:0.05em;}
+.status-active{background:rgba(67,233,123,0.12);border:1px solid rgba(67,233,123,0.25);color:var(--accent3);}
+.status-expired{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:var(--muted);}
+.view-btn{padding:5px 14px;border-radius:100px;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;background:rgba(108,99,255,0.15);border:1px solid rgba(108,99,255,0.35);color:rgba(180,175,255,0.9);text-decoration:none;white-space:nowrap;transition:all 0.2s;flex-shrink:0;}
+.view-btn:hover{background:rgba(108,99,255,0.28);}
+/* Result badge — 3D flip on load */
+.result-badge{
+  font-family:'Syne',sans-serif;font-size:11px;font-weight:800;padding:3px 10px;border-radius:100px;
+  text-transform:uppercase;letter-spacing:0.05em;
+  transform:rotateY(90deg);transition:transform 0.4s ease 0.3s;transform-style:preserve-3d;
+}
+.result-badge.flip{transform:rotateY(0deg);}
+.result-won{background:rgba(67,233,123,0.14);border:1px solid rgba(67,233,123,0.35);color:var(--accent3);}
+.result-lost{background:rgba(255,107,107,0.12);border:1px solid rgba(255,107,107,0.3);color:var(--accent2);}
+.result-tied{background:rgba(108,99,255,0.14);border:1px solid rgba(108,99,255,0.3);color:rgba(180,175,255,0.9);}
+.score-compare{font-size:12px;color:var(--muted);}
+.score-compare strong{color:var(--text);font-weight:600;}
+
+/* ── SKELETON ── */
+.skel{height:70px;border-radius:16px;background:linear-gradient(90deg,rgba(255,255,255,0.03) 25%,rgba(255,255,255,0.07) 50%,rgba(255,255,255,0.03) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;margin-bottom:10px;}
+
+/* ── EMPTY STATE ── */
+.empty-state{text-align:center;padding:3rem 1rem;opacity:0;animation:fadeIn 0.5s ease 0.15s both;}
+.empty-icon{font-size:2.8rem;margin-bottom:0.8rem;display:inline-block;animation:bounce 2s ease-in-out infinite;}
+.empty-title{font-family:'Syne',sans-serif;font-weight:700;font-size:1.05rem;color:var(--text);margin-bottom:0.4rem;}
+.empty-sub{font-size:13px;color:var(--muted);}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;top:80px;left:50%;
+  transform:translateX(-50%) translateY(-120px);
+  z-index:9999;
+  display:flex;align-items:center;gap:8px;
+  padding:10px 22px;border-radius:100px;
+  background:rgba(67,233,123,0.12);border:1px solid rgba(67,233,123,0.35);
+  color:var(--accent3);font-family:'Syne',sans-serif;font-size:13px;font-weight:700;
+  pointer-events:none;opacity:0;
+  transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1),opacity 0.3s ease;
+}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+.toast.hide{transform:translateX(-50%) translateY(-120px);opacity:0;transition:transform 0.3s ease,opacity 0.25s ease;}
+
+/* ── MOBILE ── */
+@media(max-width:600px){
+  *,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.1s!important;}
+  .orb{display:none!important;}
+  #star-canvas{display:none!important;}
+  .grid-overlay{display:none!important;}
+  .hero-mesh::before{animation:none!important;}
+  .empty-icon{animation:none!important;}
+  /* Re-enable entrance animations at mobile speed */
+  .hero-heading .letter{animation-duration:0.3s!important;animation-iteration-count:1!important;}
+  .stat-card{animation-duration:0.25s!important;}
+  .stat-card:nth-child(1){animation-delay:0.15s!important;}
+  .stat-card:nth-child(2){animation-delay:0.2s!important;}
+  .stat-card:nth-child(3){animation-delay:0.25s!important;}
+  .create-card{animation-duration:0.25s!important;animation-delay:0.25s!important;}
+  .tabs-section{animation-duration:0.25s!important;animation-delay:0.3s!important;}
+  .ch-card{animation-duration:0.2s!important;}
+  /* Layout */
+  .navbar{padding:0 1rem;}
+  .nav-links{display:none;flex-direction:column;position:fixed;top:64px;left:0;right:0;background:rgba(4,5,13,0.97);backdrop-filter:blur(20px);padding:1rem;gap:4px;z-index:99;border-bottom:1px solid var(--border);}
+  .nav-links.mobile-open{display:flex;}
+  .nav-hamburger{display:block;}
+  .nav-right .nav-logout-btn{display:none;}
+  .page-wrap{padding:72px 0.9rem 3rem;}
+  .hero-card{padding:2rem 1.25rem 1.75rem;border-radius:20px;}
+  .hero-heading{font-size:clamp(22px,7vw,36px)!important;letter-spacing:-0.5px;white-space:nowrap;}
+  .stats-row{grid-template-columns:1fr;}
+  .gen-btn{width:100%;justify-content:center;font-size:15px;padding:13px 24px;}
+  .ch-card{flex-wrap:wrap;}
+}
+</style>
+</head>
+<body>
+
+<canvas id="star-canvas"></canvas>
+<div class="grid-overlay"></div>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+
+<!-- Toast notification -->
+<div class="toast" id="toast">✓ Link copied to clipboard!</div>
+
+<div id="ch-loading">
+  <div class="spinner"></div>
+  <span class="loading-text">Loading challenges…</span>
+</div>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <a class="nav-brand" href="/">
+    <div class="nav-logo-wrap">
+      <div class="nav-logo-inner">
+        <div class="logo-glow-nav"></div>
+        <div class="logo-svg-wrap">
+          <div class="logo-ring lr1"></div>
+          <div class="logo-ring lr2"></div>
+          <div class="logo-ring lr3"></div>
+          <div class="logo-core-circle">
+            <svg class="logo-icon-svg" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="3" fill="rgba(200,195,255,0.9)"/>
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10" stroke="rgba(108,99,255,0.8)" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M12 6v6l4 2" stroke="rgba(0,210,255,0.8)" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="logo-orbit-dot"></div>
+          <div class="logo-orbit-dot2"></div>
+        </div>
+      </div>
+    </div>
+    <span class="nav-brand-text">ScrollBye</span>
+  </a>
+  <div class="nav-links" id="nav-links">
+    <a class="nav-link" href="/dashboard">Dashboard</a>
+    <a class="nav-link active" href="/challenges">Challenges</a>
+    <a class="nav-link" href="/profile">Profile</a>
+  </div>
+  <div class="nav-right" id="nav-right"></div>
+  <button class="nav-hamburger" onclick="toggleMobileNav()" aria-label="Menu">☰</button>
+</nav>
+
+<!-- MAIN -->
+<div class="page-wrap" id="main-content" style="display:none;">
+
+  <!-- 1. HERO -->
+  <div class="hero-card" id="hero-card">
+    <div class="hero-mesh"></div>
+    <div class="hero-content">
+      <span class="hero-eyebrow">⚔️ Focus battles</span>
+      <h1 class="hero-heading" id="hero-heading">Challenges</h1>
+      <p class="hero-sub">Challenge anyone. Prove your focus.</p>
+    </div>
+  </div>
+
+  <!-- 2. STATS ROW -->
+  <div class="stats-row" id="stats-row">
+    <div class="stat-card">
+      <div class="stat-icon">🏆</div>
+      <div class="stat-val" id="stat-created">—</div>
+      <div class="stat-lbl">Challenges Created</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">📩</div>
+      <div class="stat-val" id="stat-responses">—</div>
+      <div class="stat-lbl">Responses Received</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🎯</div>
+      <div class="stat-val" id="stat-winrate">—</div>
+      <div class="stat-lbl">Win Rate</div>
+    </div>
+  </div>
+
+  <!-- 3. CREATE CHALLENGE CARD -->
+  <div class="create-card">
+    <span class="create-trophy">🏆</span>
+    <div class="create-title">Start a Challenge</div>
+    <p class="create-desc">Generate a challenge link from your latest FSI score. Share it — anyone can take the survey and get compared to you head-to-head.</p>
+    <button class="gen-btn" id="gen-btn" onclick="generateChallenge()">⚔️ Generate Challenge Link</button>
+    <div id="no-data-msg">
+      No FSI score yet. <a href="/survey">Take the survey first</a> to generate a challenge link.
+    </div>
+    <!-- Link result: slides down -->
+    <div id="link-result">
+      <div class="link-result-label">Your challenge link</div>
+      <div class="link-box">
+        <span class="link-text" id="link-text"></span>
+        <button class="copy-btn" id="copy-btn" onclick="copyLink()">Copy</button>
+        <a class="wa-btn" id="wa-btn" href="#" target="_blank" rel="noopener">💬 WhatsApp</a>
+      </div>
+      <!-- Share preview card -->
+      <div class="share-preview" id="share-preview">
+        <span class="sp-logo">📊</span>
+        <div class="sp-text">
+          <div class="sp-headline" id="sp-headline">I scored —/100 — can you beat it?</div>
+          <div class="sp-url" id="sp-url"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. TABS -->
+  <div class="tabs-section">
+    <div class="tab-bar">
+      <button class="lb-tab active" data-tab="created" onclick="switchTab(this)">My Challenges</button>
+      <button class="lb-tab" data-tab="responded" onclick="switchTab(this)">Responded To</button>
+    </div>
+    <div id="tab-created" class="tab-pane" style="display:block">
+      <div id="created-list">
+        <div class="skel"></div><div class="skel"></div><div class="skel"></div>
+      </div>
+    </div>
+    <div id="tab-responded" class="tab-pane">
+      <div id="responded-list">
+        <div class="skel"></div><div class="skel"></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page-wrap -->
+
+<script>
+// ── STAR CANVAS ──
+(function(){
+  var c=document.getElementById('star-canvas');
+  var ctx=c.getContext('2d');
+  var n=window.innerWidth<600?40:180;
+  var stars=[];
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
+  resize();window.addEventListener('resize',resize);
+  for(var i=0;i<n;i++){stars.push({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.4+0.2,a:Math.random(),da:0.003+Math.random()*0.007});}
+  function frame(){
+    ctx.clearRect(0,0,c.width,c.height);
+    for(var i=0;i<stars.length;i++){
+      var s=stars[i];s.a+=s.da;if(s.a>1||s.a<0)s.da=-s.da;
+      ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      ctx.fillStyle='rgba(220,220,255,'+s.a.toFixed(2)+')';ctx.fill();
+    }
+    requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+function toggleMobileNav(){document.getElementById('nav-links').classList.toggle('mobile-open');}
+
+// ── HERO LETTER STAGGER ──
+function staggerHeroLetters(){
+  var el=document.getElementById('hero-heading');
+  if(!el)return;
+  var text=el.textContent;
+  var isMobile=window.innerWidth<=600;
+  var html='';
+  var li=0;
+  for(var i=0;i<text.length;i++){
+    if(text[i]===' '){
+      html+='<span style="display:inline-block;min-width:0.25em;">&nbsp;</span>';
+    } else {
+      var d=isMobile?(0.05+li*0.015):(0.2+li*0.05);
+      html+='<span class="letter" style="animation-delay:'+d+'s">'+text[i]+'</span>';
+      li++;
+    }
+  }
+  el.innerHTML=html;
+}
+
+// ── HERO 3D TILT (desktop only) ──
+var _heroParY=0,_heroTX=0,_heroTY=0,_heroTilting=false;
+function _heroTransform(){
+  var h=document.getElementById('hero-card');if(!h)return;
+  if(_heroTilting){h.style.transform='perspective(1000px) rotateX('+_heroTX+'deg) rotateY('+_heroTY+'deg) translateY('+_heroParY+'px)';}
+  else{h.style.transform='translateY('+_heroParY+'px)';}
+}
+function initTilt(){
+  if(window.innerWidth<=600)return;
+  var card=document.getElementById('hero-card');if(!card)return;
+  card.addEventListener('mousemove',function(e){
+    var r=card.getBoundingClientRect();
+    var dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);
+    _heroTilting=true;_heroTX=-dy*0.008;_heroTY=dx*0.008;_heroTransform();
+  });
+  card.addEventListener('mouseleave',function(){_heroTilting=false;_heroTransform();});
+}
+
+// ── PARALLAX (desktop only) ──
+function initParallax(){
+  if(window.innerWidth<=600)return;
+  window.addEventListener('scroll',function(){
+    if(window.innerWidth<=600)return;
+    _heroParY=window.scrollY*0.3;_heroTransform();
+  },{passive:true});
+}
+
+// ── STATS COUNT-UP ──
+var _statsTargets=null,_statsInView=false,_statsAnimated=false;
+function countUp(el,target,suffix,dur){
+  var start=performance.now();
+  function step(now){
+    var p=Math.min((now-start)/dur,1);
+    var ease=1-Math.pow(1-p,3);
+    el.textContent=Math.round(ease*target)+(suffix||'');
+    if(p<1)requestAnimationFrame(step);
+    else el.textContent=target+(suffix||'');
+  }
+  requestAnimationFrame(step);
+}
+function tryCountUp(){
+  if(!_statsTargets||!_statsInView||_statsAnimated)return;
+  _statsAnimated=true;
+  countUp(document.getElementById('stat-created'),_statsTargets.created,'',1000);
+  setTimeout(function(){countUp(document.getElementById('stat-responses'),_statsTargets.responses,'',1000);},80);
+  setTimeout(function(){countUp(document.getElementById('stat-winrate'),_statsTargets.winRate,'%',1000);},160);
+}
+var _io=new IntersectionObserver(function(entries){
+  if(entries[0].isIntersecting){_statsInView=true;tryCountUp();}
+},{threshold:0.4});
+_io.observe(document.getElementById('stats-row'));
+
+// ── TOAST ──
+var _toastTimer=null;
+function showToast(msg){
+  var t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.remove('hide');t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(function(){
+    t.classList.remove('show');t.classList.add('hide');
+    setTimeout(function(){t.classList.remove('hide');},350);
+  },2500);
+}
+
+// ── STATE ──
+var _me=null,_generatedLink='',_generatedFsi=0;
+
+// ── INIT ──
+fetch('/api/me').then(function(r){return r.json();}).then(function(me){
+  if(!me.loggedIn){location.href='/login?next=/challenges';return;}
+  _me=me;
+  var nr=document.getElementById('nav-right');
+  var av=me.avatar
+    ?'<a href="/profile"><img class="nav-avatar" src="'+escHtml(me.avatar)+'" alt="avatar"></a>'
+    :'<a href="/profile" class="nav-avatar-initial">'+me.username[0].toUpperCase()+'</a>';
+  nr.innerHTML=av+'<a class="nav-logout-btn" href="/auth/logout">Logout</a>';
+  document.getElementById('ch-loading').style.display='none';
+  document.getElementById('main-content').style.display='';
+  staggerHeroLetters();
+  initTilt();
+  initParallax();
+  loadMyChallenges();
+}).catch(function(){location.href='/login?next=/challenges';});
+
+// ── GENERATE CHALLENGE ──
+function generateChallenge(){
+  var btn=document.getElementById('gen-btn');
+  btn.disabled=true;btn.textContent='Generating…';
+  document.getElementById('no-data-msg').style.display='none';
+  document.getElementById('link-result').classList.remove('open');
+  document.getElementById('share-preview').classList.remove('show');
+
+  fetch('/api/my-latest-submission').then(function(r){return r.json();}).then(function(data){
+    var sub=data&&data.submission;
+    if(!data||!data.ok||!sub||sub.fsi==null){
+      btn.disabled=false;btn.innerHTML='⚔️ Generate Challenge Link';
+      document.getElementById('no-data-msg').style.display='block';return;
+    }
+    var fsi=parseFloat(sub.fsi)||0;
+    var name=(_me&&_me.username)||'Anonymous';
+    return fetch('/api/challenge/create',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({fsi:fsi,challengerName:name})
+    }).then(function(r){return r.json();}).then(function(d){
+      btn.disabled=false;btn.innerHTML='⚔️ Generate Challenge Link';
+      if(!d.ok){alert('Error: '+(d.error||'Could not create challenge'));return;}
+      _generatedLink=d.link;_generatedFsi=fsi;
+      document.getElementById('link-text').textContent=d.link;
+      document.getElementById('wa-btn').href='https://wa.me/?text='+encodeURIComponent('Can you beat my FSI of '+Math.round(fsi)+'/100? '+d.link);
+      // Preview card
+      document.getElementById('sp-headline').textContent='I scored '+Math.round(fsi)+'/100 — can you beat it?';
+      document.getElementById('sp-url').textContent=d.link;
+      // Slide down
+      document.getElementById('link-result').classList.add('open');
+      setTimeout(function(){document.getElementById('share-preview').classList.add('show');},300);
+      // Refresh stats
+      loadMyChallenges();
+    });
+  }).catch(function(){
+    btn.disabled=false;btn.innerHTML='⚔️ Generate Challenge Link';
+    alert('Network error. Try again.');
+  });
+}
+
+function copyLink(){
+  if(!_generatedLink)return;
+  navigator.clipboard.writeText(_generatedLink).then(function(){
+    showToast('✓ Link copied to clipboard!');
+  }).catch(function(){
+    var ta=document.createElement('textarea');ta.value=_generatedLink;ta.style.cssText='position:fixed;opacity:0;';
+    document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+    showToast('✓ Link copied to clipboard!');
+  });
+}
+
+// ── TAB SWITCH ──
+function switchTab(btn){
+  document.querySelectorAll('.lb-tab').forEach(function(b){b.classList.remove('active');});
+  document.querySelectorAll('.tab-pane').forEach(function(p){p.style.display='none';});
+  btn.classList.add('active');
+  var pane=document.getElementById('tab-'+btn.dataset.tab);
+  if(!pane)return;
+  pane.style.display='block';
+  // Web Animations API — works reliably regardless of display:none history
+  pane.animate(
+    [{opacity:0,transform:'translateX(-14px)'},{opacity:1,transform:'translateX(0)'}],
+    {duration:280,easing:'cubic-bezier(0.22,1,0.36,1)',fill:'forwards'}
+  );
+}
+
+// ── LOAD DATA ──
+function loadMyChallenges(){
+  fetch('/api/my-challenges').then(function(r){return r.json();}).then(function(d){
+    if(!d.ok){
+      document.getElementById('created-list').innerHTML=errState();
+      document.getElementById('responded-list').innerHTML=errState();
+      return;
+    }
+    renderCreated(d.created||[]);
+    renderResponded(d.responded||[]);
+    // Compute stats
+    var created=(d.created||[]).length;
+    var responses=(d.created||[]).reduce(function(sum,c){return sum+(c.responses?c.responses.length:0);},0);
+    var resp=d.responded||[];
+    var wins=resp.filter(function(item){
+      return item.won||(parseFloat(item.myFsi||0)>parseFloat((item.challenge||{}).challengerFSI||0));
+    }).length;
+    var winRate=resp.length?Math.round(wins/resp.length*100):0;
+    _statsTargets={created:created,responses:responses,winRate:winRate};
+    // Reset and re-trigger if already in view
+    if(!_statsAnimated){tryCountUp();}
+    else{
+      document.getElementById('stat-created').textContent=created;
+      document.getElementById('stat-responses').textContent=responses;
+      document.getElementById('stat-winrate').textContent=winRate+'%';
+    }
+  }).catch(function(){
+    document.getElementById('created-list').innerHTML=errState();
+    document.getElementById('responded-list').innerHTML=errState();
+  });
+}
+
+function fmtDate(iso){
+  if(!iso)return '';
+  try{return new Date(iso).toLocaleDateString('en-IN',{month:'short',day:'numeric',year:'numeric'});}catch(e){return '';}
+}
+function fsiBadge(fsi){
+  var v=parseFloat(fsi)||0;
+  var cls=v>=70?'fsi-green':v>=40?'fsi-amber':'fsi-red';
+  return '<span class="fsi-badge '+cls+'">FSI '+Math.round(v)+'</span>';
+}
+
+function renderCreated(list){
+  var el=document.getElementById('created-list');
+  if(!list.length){
+    el.innerHTML='<div class="empty-state"><div class="empty-icon">🎯</div><div class="empty-title">No challenges yet</div><div class="empty-sub">Generate your first challenge link above</div></div>';
+    return;
+  }
+  var html='';
+  list.forEach(function(c,i){
+    var expired=c.expiresAt&&new Date(c.expiresAt)<new Date();
+    var resCount=c.responses?c.responses.length:0;
+    html+=
+      '<div class="ch-card" style="animation-delay:'+(i*0.08)+'s">'+
+        '<div class="ch-main">'+
+          '<div class="ch-date">Created '+fmtDate(c.createdAt)+'</div>'+
+          '<div class="ch-row-info">'+
+            fsiBadge(c.challengerFSI)+
+            '<span class="resp-count">'+resCount+(resCount===1?' response':' responses')+'</span>'+
+            '<span class="status-badge '+(expired?'status-expired':'status-active')+'">'+(expired?'Expired':'Active')+'</span>'+
+          '</div>'+
+        '</div>'+
+        '<a class="view-btn" href="/my-challenge/'+esc(c.token)+'">View →</a>'+
+      '</div>';
+  });
+  el.innerHTML=html;
+}
+
+function renderResponded(list){
+  var el=document.getElementById('responded-list');
+  if(!list.length){
+    el.innerHTML='<div class="empty-state"><div class="empty-icon">🛡️</div><div class="empty-title">No challenges accepted yet</div><div class="empty-sub">Open a challenge link from a friend to compete</div></div>';
+    return;
+  }
+  var html='';
+  list.forEach(function(item,i){
+    var c=item.challenge||{};
+    var myFsi=parseFloat(item.myFsi)||0;
+    var theirFsi=parseFloat(c.challengerFSI)||0;
+    var tied=item.tied||(myFsi===theirFsi);
+    var won=!tied&&(item.won||myFsi>theirFsi);
+    var cardCls=tied?'card-tied':won?'card-won':'card-lost';
+    var resultCls=tied?'result-tied':won?'result-won':'result-lost';
+    var resultTxt=tied?'Tied':won?'Won 🏆':'Lost';
+    html+=
+      '<div class="ch-card '+cardCls+'" style="animation-delay:'+(i*0.08)+'s">'+
+        '<div class="ch-main">'+
+          '<div class="ch-date">'+fmtDate(item.respondedAt)+'</div>'+
+          '<div class="ch-row-info">'+
+            '<span class="result-badge '+resultCls+'">'+resultTxt+'</span>'+
+            '<span class="score-compare">'+
+              '<strong>You:</strong> FSI '+Math.round(myFsi)+
+              ' vs <strong>'+escHtml(c.challengerName||'Challenger')+':</strong> FSI '+Math.round(theirFsi)+
+            '</span>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+  });
+  el.innerHTML=html;
+  // Trigger 3D badge flip after cards animate in
+  setTimeout(function(){
+    document.querySelectorAll('#responded-list .result-badge').forEach(function(b){b.classList.add('flip');});
+  },400);
+}
+
+function errState(){return '<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">Could not load</div><div class="empty-sub">Refresh to try again</div></div>';}
+function esc(s){return String(s).replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+</script>
+</body>
+</html>

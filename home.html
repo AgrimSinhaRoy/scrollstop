@@ -579,6 +579,7 @@ section{position:relative;z-index:1;}
   .mobile-drawer{backdrop-filter:none;background:rgba(4,5,13,0.98);}
   /* Remove double horizontal padding from section-wrap on mobile */
   .section-wrap{padding:0;}
+  #star-canvas{opacity:0.2;}
 }
 </style>
 </head>
@@ -935,7 +936,7 @@ section{position:relative;z-index:1;}
   var c=document.getElementById('star-canvas'),ctx=c.getContext('2d'),stars=[];
   function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
   resize();window.addEventListener('resize',resize);
-  for(var i=0;i<220;i++)stars.push({x:Math.random()*window.innerWidth,y:Math.random()*window.innerHeight,r:Math.random()*1.4+0.2,a:Math.random(),speed:Math.random()*0.006+0.002,t:Math.random()*Math.PI*2});
+  var n=window.innerWidth<600?60:220;for(var i=0;i<n;i++)stars.push({x:Math.random()*window.innerWidth,y:Math.random()*window.innerHeight,r:Math.random()*1.4+0.2,a:Math.random(),speed:Math.random()*0.006+0.002,t:Math.random()*Math.PI*2});
   function draw(){
     ctx.clearRect(0,0,c.width,c.height);
     stars.forEach(function(s){

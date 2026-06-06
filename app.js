@@ -75,6 +75,7 @@ const challengeSchema = new mongoose.Schema({
   createdAt:     String,
   expiresAt:     String,
   responses:     [{ responderName: String, fsi: Number, respondedAt: String }],
+  category:      { type: String, default: 'fsi' },
 }, { versionKey: false });
 
 const User       = mongoose.model('User',       userSchema);
@@ -129,7 +130,7 @@ app.use(express.json());
 app.use(methodOverride('_method'));
 app.use(session({
   store: MongoStore.create({ mongoUrl: MONGODB_URI, dbName: 'scrollbye_dev', ttl: 86400 }),
-  secret: process.env.SESSION_SECRET || 'scrollstop-secret',
+  secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
   resave: false,
   saveUninitialized: false,
   cookie: { maxAge: 7 * 24 * 60 * 60 * 1000 }
@@ -189,6 +190,7 @@ app.get('/register', (req, res) => { if (req.session.userId) return res.redirect
 app.get('/403', (req, res) => res.status(403).sendFile(path.join(__dirname, '403.html')));
 app.get('/dashboard', (req, res) => { if (!req.session.userId) return res.redirect('/login?next=/dashboard'); res.sendFile(path.join(__dirname, 'dashboard.html')); });
 app.get('/profile',   (req, res) => { if (!req.session.userId) return res.redirect('/login?next=/profile');   res.sendFile(path.join(__dirname, 'profile.html')); });
+app.get('/challenges', (req, res) => { if (!req.session.userId) return res.redirect('/login?next=/challenges'); res.sendFile(path.join(__dirname, 'challenges.html')); });
 app.get('/admin', async (req, res) => {
   if (!req.session.userId) return res.redirect('/login?next=/admin');
   const user = await User.findOne({ id: req.session.userId });
@@ -252,7 +254,7 @@ const SURVEY_FIELDS = ['participantName','isAnonymous','grade','school','country
 app.post('/survey/submit', async (req, res) => {
   const safe = {};
   SURVEY_FIELDS.forEach(k => { if (req.body[k] !== undefined) safe[k] = req.body[k]; });
-  const doc = { id: Date.now(), timestamp: new Date().toISOString(), ...safe };
+  const doc = { id: Date.now(), timestamp: new Date().toISOString(), userId: req.session.userId || null, username: req.session.username || null, ...safe };
   if (req.session.userId) {
     const user = await User.findOne({ id: req.session.userId });
     if (user) { doc.userId = user.id; doc.username = user.username; }
@@ -402,21 +404,28 @@ app.get('/api/my-progress', async (req, res) => {
 // ── GET /api/my-latest-submission ─────────────────────────────
 app.get('/api/my-latest-submission', async (req, res) => {
   if (!req.session.userId) return res.json({ ok: false, error: 'Not logged in' });
-  const user = await User.findOne({ id: req.session.userId });
-  if (!user) return res.json({ ok: false });
 
-  // Try matched submission first
-  let sub = await Submission.findOne({
+  const user = await User.findOne({ id: req.session.userId });
+  if (!user) return res.json({ ok: false, error: 'User not found' });
+
+  // Only match submissions that explicitly belong to this user
+  // Never fall back to other users' data
+  const sub = await Submission.findOne({
     $or: [
       { userId: req.session.userId },
       { userId: String(req.session.userId) },
-      { participantName: { $regex: new RegExp('^' + user.username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') } }
+      {
+        username: {
+          $regex: new RegExp('^' + user.username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i')
+        },
+        userId: { $exists: false }
+      }
     ]
   }).sort({ timestamp: -1 });
 
-  // Fallback: most recent in entire collection
-  if (!sub) sub = await Submission.findOne({}).sort({ timestamp: -1 });
+  // If still no match — return noData, NEVER return another user's submission
   if (!sub) return res.json({ ok: false, noData: true });
+
   res.json({ ok: true, submission: sub });
 });
 
@@ -519,6 +528,54 @@ app.post('/api/admin/ban-user', requireAdmin, async (req, res) => {
 });
 
 // ── Challenge routes ──────────────────────────────────────────
+app.get('/api/my-challenges', async (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ ok: false, error: 'Login required' });
+  const created = await Challenge.find({ challengerId: req.session.userId }).sort({ createdAt: -1 }).limit(20);
+  const respondedSubs = await Submission.find({ userId: req.session.userId, challengeToken: { $exists: true, $ne: null } }).lean();
+  const responded = [];
+  for (const sub of respondedSubs) {
+    const c = await Challenge.findOne({ token: sub.challengeToken });
+    if (c) responded.push({ challenge: c, myFsi: sub.fsi, respondedAt: sub.timestamp });
+  }
+  res.json({ ok: true, created, responded });
+});
+
+app.get('/api/my-badge-data', async (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ ok: false });
+  try {
+    const challengesCreated = await Challenge.countDocuments({ challengerId: req.session.userId });
+    const respondedSubs = await Submission.find({ userId: req.session.userId, challengeToken: { $exists: true, $ne: null } }).sort({ timestamp: 1 }).lean();
+    let challengesWon = 0, consecutiveWins = 0, currentStreak = 0;
+    for (const sub of respondedSubs) {
+      const ch = await Challenge.findOne({ token: sub.challengeToken }).lean();
+      if (ch) {
+        const myFsi = parseFloat(sub.fsi) || 0;
+        const theirFsi = parseFloat(ch.challengerFSI) || 0;
+        if (myFsi > theirFsi) { challengesWon++; currentStreak++; if (currentStreak > consecutiveWins) consecutiveWins = currentStreak; }
+        else { currentStreak = 0; }
+      }
+    }
+    const top10 = await User.find({}).sort({ xp: -1 }).limit(10).lean();
+    const isTop10 = top10.some(u => u.username === req.session.username);
+    res.json({ ok: true, challengesCreated, challengesWon, consecutiveWins, isTop10, socialShares: 0 });
+  } catch(e) {
+    res.json({ ok: false, challengesCreated: 0, challengesWon: 0, consecutiveWins: 0, isTop10: false, socialShares: 0 });
+  }
+});
+
+app.post('/api/challenge/create-vs', async (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ ok: false, error: 'Login required' });
+  const validCategories = ['sleep','focus','passive','streak','fsi','speed'];
+  const category = (req.body.category || 'fsi').toString();
+  if (!validCategories.includes(category)) return res.status(400).json({ ok: false, error: 'Invalid category' });
+  const challengerScore = parseFloat(req.body.challengerScore);
+  if (isNaN(challengerScore)) return res.status(400).json({ ok: false, error: 'Invalid score' });
+  const challengerName = (req.body.challengerName || req.session.username || 'Anonymous').toString().slice(0, 40);
+  const token = crypto.randomBytes(8).toString('hex');
+  await Challenge.create({ token, challengerId: req.session.userId, challengerName, challengerFSI: challengerScore, category, createdAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), responses: [] });
+  res.json({ ok: true, token, link: req.protocol + '://' + req.get('host') + '/challenge/' + token });
+});
+
 app.post('/api/challenge/create', async (req, res) => {
   if (!req.session.userId) return res.status(401).json({ ok: false, error: 'Login required' });
   const fsi = parseFloat(req.body.fsi);
@@ -527,6 +584,38 @@ app.post('/api/challenge/create', async (req, res) => {
   const token = crypto.randomBytes(8).toString('hex');
   await Challenge.create({ token, challengerId: req.session.userId, challengerName, challengerFSI: fsi, createdAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), responses: [] });
   res.json({ ok: true, token, link: req.protocol + '://' + req.get('host') + '/challenge/' + token });
+});
+
+app.get('/my-challenge/:token', async (req, res) => {
+  if (!req.session.userId) return res.redirect('/login');
+  const c = await Challenge.findOne({ token: req.params.token });
+  if (!c) return res.status(404).sendFile(path.join(__dirname, '403.html'));
+  if (c.challengerId !== req.session.userId) return res.redirect('/challenge/' + req.params.token);
+  res.sendFile(path.join(__dirname, 'my-challenge.html'));
+});
+
+app.get('/api/my-challenge/:token', async (req, res) => {
+  if (!req.session.userId) return res.status(401).json({ error: 'Login required' });
+  const c = await Challenge.findOne({ token: req.params.token }).lean();
+  if (!c) return res.status(404).json({ error: 'Not found' });
+  if (c.challengerId !== req.session.userId) return res.status(403).json({ error: 'Not your challenge' });
+  const expired = new Date() > new Date(c.expiresAt);
+  const daysLeft = expired ? 0 : Math.ceil((new Date(c.expiresAt) - new Date()) / (1000 * 60 * 60 * 24));
+  res.json({
+    ok: true,
+    token: c.token,
+    challengerFSI: c.challengerFSI,
+    challengerName: c.challengerName,
+    createdAt: c.createdAt,
+    expiresAt: c.expiresAt,
+    expired,
+    daysLeft,
+    responses: c.responses || [],
+    link: (process.env.BASE_URL || (req.protocol + '://' + req.get('host'))) + '/challenge/' + c.token,
+    wins: (c.responses || []).filter(r => r.fsi < c.challengerFSI).length,
+    losses: (c.responses || []).filter(r => r.fsi > c.challengerFSI).length,
+    ties: (c.responses || []).filter(r => r.fsi === c.challengerFSI).length
+  });
 });
 
 app.get('/challenge/:token', async (req, res) => {

@@ -3,9 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#04050d">
 <title>ScrollBye — Track Your Focus</title>
 <!-- Prefetch login page so navigation feels instant -->
 <link rel="prefetch" href="/login">
+<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -574,8 +576,11 @@ body.in-landing{overflow:hidden;}
   .submit-btn,.next-btn{font-size:15px;padding:15px;}
   /* Hero stats row */
   .hero-stats{gap:1rem;}
-  /* Disable heavy blur animation on mobile for performance */
   .orb{display:none;}
+  #star-canvas{display:none;}
+  .grid-overlay{display:none;}
+  *,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.1s!important;}
+  body{font-size:14px;}
 }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -1001,7 +1006,7 @@ body.in-landing{overflow:hidden;}
     <div class="qr-card">
       <div class="qr-card-title">📱 Share this survey</div>
       <div class="qr-inner">
-        <img id="qr-img" src="" alt="QR Code" class="qr-img">
+        <img id="qr-img" src="" alt="QR Code" class="qr-img" loading="lazy">
         <div class="qr-text">
           <div class="qr-headline">Scan to take the survey</div>
           <div class="qr-sub">Help us collect more data. Every response strengthens the research!</div>
@@ -1115,7 +1120,7 @@ checkIfAlreadyLogged();
   var c=document.getElementById('star-canvas'),ctx=c.getContext('2d'),stars=[];
   function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
   resize();window.addEventListener('resize',resize);
-  for(var i=0;i<200;i++)stars.push({x:Math.random()*window.innerWidth,y:Math.random()*window.innerHeight,r:Math.random()*1.4+0.2,a:Math.random(),speed:Math.random()*0.006+0.002,t:Math.random()*Math.PI*2});
+  var n=window.innerWidth<600?40:180;for(var i=0;i<n;i++)stars.push({x:Math.random()*window.innerWidth,y:Math.random()*window.innerHeight,r:Math.random()*1.4+0.2,a:Math.random(),speed:Math.random()*0.006+0.002,t:Math.random()*Math.PI*2});
   function draw(){
     ctx.clearRect(0,0,c.width,c.height);
     stars.forEach(function(s){
@@ -1642,7 +1647,7 @@ function calcFSI(){
   var si=Math.min(Math.floor(study*2),8);
   var ce=document.querySelector('input[name=checks]:checked');
   var checks=ce?parseInt(ce.value):5;
-  var F=Math.max(0,ss[si]+(focus-1)*5-checks*2);
+  var F=Math.max(0,Math.min(100,ss[si]+(focus-1)*5-checks*2));
   var A=acad*10;
   return Math.round((S*0.25)+(L*0.20)+(M*0.20)+(F*0.20)+(A*0.15));
 }
@@ -1684,7 +1689,7 @@ function submitForm(){
   var M=Math.round((mood/5)*100);
   var ss2=[0,20,40,55,65,75,85,92,100];
   var si=Math.min(Math.floor(study*2),8);
-  var F=Math.max(0,ss2[si]+(focus-1)*5-checks*2);
+  var F=Math.max(0,Math.min(100,ss2[si]+(focus-1)*5-checks*2));
   var A=acad*10;
   var resultPayload=Object.assign({},formData,{screenScore:S,sleepScore:L,moodScore:M,focusScore:F,academicScore:A,savedAt:Date.now(),date:new Date().toISOString().split('T')[0]});
   if(_challengeToken){resultPayload.challengeToken=_challengeToken;resultPayload.responderName=_challengeResponder||formData.participantName||'Anonymous';}
@@ -1749,6 +1754,7 @@ function submitForm(){
       document.getElementById('ss-gate').classList.add('visible');
     } else {
       _signedIn=true;
+      (function(){var nav=document.querySelector('.nav-links');if(nav&&!nav.querySelector('[href="/challenges"]')){var cl=document.createElement('a');cl.className='nav-link';cl.href='/challenges';cl.textContent='Challenges';nav.insertBefore(cl,nav.children[Math.min(2,nav.children.length)]);}}());
       loadLeaderboard();
       fetch('/api/my-progress').then(function(r){return r.json();}).then(function(prog){
         var isRecurring=prog.loggedIn&&prog.lastLogDate&&prog.streak>0;

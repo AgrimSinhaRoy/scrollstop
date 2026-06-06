@@ -50,6 +50,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .logo-orbit-dot2{position:absolute;width:6px;height:6px;border-radius:50%;background:var(--accent2);box-shadow:0 0 10px var(--accent2);top:50%;left:0;transform-origin:50px 0;animation:orbitDot2 6s linear infinite reverse;}
 @keyframes orbitDot2{0%{transform:translateY(-50%) rotate(0deg) translateX(46px) rotate(0deg);}100%{transform:translateY(-50%) rotate(360deg) translateX(46px) rotate(-360deg);}}
 .nav-links{display:flex;align-items:center;gap:0.25rem;}
+.nav-hamburger{display:none;background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text);padding:6px 10px;font-size:18px;cursor:pointer;}
 .nav-link{padding:6px 14px;border-radius:8px;font-size:13px;font-weight:500;color:var(--muted);text-decoration:none;transition:all 0.2s;}
 .nav-link:hover{color:var(--text);background:rgba(255,255,255,0.04);}
 .nav-link.active{color:var(--text);background:rgba(108,99,255,0.15);border:1px solid rgba(108,99,255,0.3);}
@@ -111,12 +112,15 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 @media(max-width:600px){
   .navbar{padding:0 1rem;}
   .nav-links{display:none;}
+  .nav-links.mobile-open{display:flex;flex-direction:column;position:fixed;top:64px;left:0;right:0;background:rgba(4,5,13,0.97);backdrop-filter:blur(20px);padding:1rem;gap:4px;border-bottom:1px solid var(--border);z-index:99;}
+  .nav-hamburger{display:block;}
   .comparison-grid{gap:0.5rem;}
   .comp-score{font-size:2.2rem;}
   .challenger-fsi-big{font-size:3.5rem;}
   .cta-survey-btn{width:100%;justify-content:center;}
   .winner-banner{font-size:14px;padding:0.85rem 1rem;}
   .orb{display:none;}
+  #star-canvas{opacity:0.2;}
   .challenge-card{padding:1.5rem 1.25rem;}
 }
 </style>
@@ -160,6 +164,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   <div class="nav-right" id="nav-right">
     <a class="btn-secondary" href="/survey" style="padding:7px 16px;font-size:13px;">Take Survey →</a>
   </div>
+  <button class="nav-hamburger" id="nav-hamburger" onclick="toggleMobileNav()" aria-label="Menu">☰</button>
 </nav>
 
 <!-- LOADING -->
@@ -231,8 +236,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   var ctx=c.getContext('2d'),W=0,H=0,stars=[];
   function resize(){W=c.width=window.innerWidth;H=c.height=window.innerHeight;}
   function mkStar(){return{x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.2+0.2,a:Math.random(),da:(Math.random()-0.5)*0.004+0.001};}
-  window.addEventListener('resize',function(){resize();stars=[];for(var i=0;i<180;i++)stars.push(mkStar());});
-  resize();for(var i=0;i<180;i++)stars.push(mkStar());
+  window.addEventListener('resize',function(){resize();var n=window.innerWidth<600?60:180;stars=[];for(var i=0;i<n;i++)stars.push(mkStar());});
+  var n=window.innerWidth<600?60:180;resize();for(var i=0;i<n;i++)stars.push(mkStar());
   function draw(){
     ctx.clearRect(0,0,W,H);
     for(var i=0;i<stars.length;i++){
@@ -244,6 +249,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   }
   draw();
 })();
+function toggleMobileNav(){document.querySelector('.nav-links').classList.toggle('mobile-open');}
 </script>
 
 <script>
@@ -270,6 +276,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
         ? '<a href="/profile"><img class="nav-avatar" src="'+me.avatar+'" alt="avatar"></a>'
         : '<a href="/profile" class="nav-avatar-initial">'+me.username[0].toUpperCase()+'</a>';
       navRight.innerHTML = av + '<a class="nav-logout-btn" href="/auth/logout">Logout</a>';
+      (function(){var nav=document.querySelector('.nav-links');if(nav&&!nav.querySelector('[href="/challenges"]')){var cl=document.createElement('a');cl.className='nav-link';cl.href='/challenges';cl.textContent='Challenges';nav.insertBefore(cl,nav.children[Math.min(2,nav.children.length)]);}}());
     }
   }).catch(function(){});
 

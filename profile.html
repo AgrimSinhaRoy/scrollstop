@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#04050d">
 <title>ScrollBye — Profile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
@@ -56,6 +58,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .nav-brand{display:flex;align-items:center;gap:6px;text-decoration:none;}
 .nav-brand-text{font-family:'Syne',sans-serif;font-weight:800;font-size:17px;color:var(--text);}
 .nav-links{display:flex;align-items:center;gap:0.25rem;}
+.nav-hamburger{display:none;background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:var(--text);padding:6px 10px;font-size:18px;cursor:pointer;}
 .nav-link{padding:6px 14px;border-radius:8px;font-size:13px;font-weight:500;color:var(--muted);text-decoration:none;transition:all 0.2s;}
 .nav-link:hover{color:var(--text);background:rgba(255,255,255,0.04);}
 .nav-link.active{color:var(--text);background:rgba(108,99,255,0.15);border:1px solid rgba(108,99,255,0.3);}
@@ -66,7 +69,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .nav-logout-btn:hover{background:rgba(255,107,107,0.12);border-color:var(--accent2);color:#fff;}
 
 /* PAGE */
-.page-wrap{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:100px 2rem 4rem;}
+.page-wrap{position:relative;z-index:1;max-width:860px;margin:0 auto;padding:80px 1rem 3rem;}
 .section-eyebrow{display:inline-flex;align-items:center;gap:8px;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);margin-bottom:1.25rem;}
 .eyebrow-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);}
 .card{background:rgba(10,12,26,0.65);border:1px solid var(--border);border-radius:20px;backdrop-filter:blur(20px);padding:1.5rem;transition:border-color 0.25s;margin-bottom:1.25rem;}
@@ -79,9 +82,14 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
 /* PROFILE HERO */
 .profile-hero{display:flex;align-items:center;gap:2rem;margin-bottom:2rem;flex-wrap:wrap;}
-.avatar-wrap{position:relative;flex-shrink:0;}
+.avatar-wrap{position:relative;flex-shrink:0;width:120px;height:120px;}
+#avatar-display{
+  width:120px;height:120px;border-radius:50%;overflow:hidden;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
 .avatar-img,.avatar-initial-lg{
   width:120px;height:120px;border-radius:50%;object-fit:cover;
+  display:block;
   border:3px solid rgba(108,99,255,0.5);
   box-shadow:0 0 0 4px rgba(108,99,255,0.15),0 0 40px rgba(108,99,255,0.3);
 }
@@ -150,7 +158,22 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .badge-unlocked-tag{font-size:10px;font-weight:700;color:var(--accent3);margin-top:2px;}
 .badge-locked-tag{font-size:10px;color:var(--muted);}
 
-@media(max-width:600px){.profile-hero{flex-direction:column;align-items:flex-start;}.badge-grid{grid-template-columns:repeat(3,1fr);}.stat-grid{grid-template-columns:1fr 1fr;}.navbar{padding:0 1.25rem;}.nav-links{display:none;}.orb{display:none;}}
+@media(max-width:600px){
+  *,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.1s!important;}
+  .profile-hero{flex-direction:column;align-items:flex-start;}
+  .badge-grid{grid-template-columns:repeat(3,1fr);}
+  .stat-grid{grid-template-columns:1fr!important;}
+  .navbar{padding:0 1.25rem;}
+  .nav-links{display:none;}
+  .nav-links.mobile-open{display:flex;flex-direction:column;position:fixed;top:64px;left:0;right:0;background:rgba(4,5,13,0.97);backdrop-filter:blur(20px);padding:1rem;gap:4px;border-bottom:1px solid var(--border);z-index:99;}
+  .nav-hamburger{display:block;}
+  .orb{display:none;}
+  #star-canvas{display:none;}
+  .grid-overlay{display:none;}
+  .page-wrap{padding:72px 0.75rem 2rem;}
+  .card,.stat-card,.xp-card,.chart-card{padding:1rem;}
+  body{font-size:14px;}
+}
 </style>
 </head>
 <body>
@@ -202,6 +225,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
     <a href="/profile" id="nav-avatar-wrap"></a>
     <a class="nav-logout-btn" href="/auth/logout">Logout</a>
   </div>
+  <button class="nav-hamburger" id="nav-hamburger" onclick="toggleMobileNav()" aria-label="Menu">☰</button>
 </nav>
 
 <!-- PAGE -->
@@ -210,10 +234,12 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   <!-- Profile Hero -->
   <div class="section-eyebrow"><span class="eyebrow-dot"></span>My Profile</div>
   <div class="profile-hero">
-    <div class="avatar-wrap">
-      <div id="avatar-display"></div>
-      <div class="avatar-camera-overlay" onclick="document.getElementById('avatar-file-input').click()">📷</div>
-      <input type="file" id="avatar-file-input" accept="image/*">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0;">
+      <div class="avatar-wrap">
+        <div id="avatar-display"></div>
+        <div class="avatar-camera-overlay" onclick="document.getElementById('avatar-file-input').click()">📷</div>
+        <input type="file" id="avatar-file-input" accept="image/*">
+      </div>
       <div class="upload-status" id="upload-status"></div>
     </div>
     <div class="profile-info">
@@ -281,11 +307,12 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   var ctx=c.getContext('2d');
   var stars=[];
   function resize(){c.width=window.innerWidth;c.height=window.innerHeight;}
-  function initStars(){stars=[];for(var i=0;i<160;i++){stars.push({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.2+0.2,a:Math.random(),s:Math.random()*0.003+0.001});}}
+  function initStars(){var n=window.innerWidth<600?40:180;stars=[];for(var i=0;i<n;i++){stars.push({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.2+0.2,a:Math.random(),s:Math.random()*0.003+0.001});}}
   function draw(){ctx.clearRect(0,0,c.width,c.height);for(var s of stars){ctx.save();ctx.globalAlpha=s.a;ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();ctx.restore();s.a+=s.s;if(s.a>1||s.a<0)s.s=-s.s;}requestAnimationFrame(draw);}
   window.addEventListener('resize',function(){resize();initStars();});
   resize();initStars();draw();
 })();
+function toggleMobileNav(){document.querySelector('.nav-links').classList.toggle('mobile-open');}
 
 // ── Level system ─────────────────────────────────────────────
 var LEVELS=[
@@ -352,39 +379,91 @@ function renderNavAvatar(avatarUrl,username){
 
 // ── Badge definitions ────────────────────────────────────────
 var BADGES=[
-  {id:'first_log',   emoji:'🌱', name:'First Log',        desc:'Complete your first survey',         color:'#43E97B'},
-  {id:'week_warrior',emoji:'🔥', name:'Week Warrior',      desc:'Reach a 7-day streak',               color:'#FF6B6B'},
-  {id:'sleep_champ', emoji:'💤', name:'Sleep Champion',    desc:'Log 8+ hours sleep in a survey',     color:'#00D2FF'},
-  {id:'focus_master',emoji:'🎯', name:'Focus Master',      desc:'Achieve FSI above 80',               color:'#6C63FF'},
-  {id:'consistency', emoji:'🏆', name:'Consistency King',  desc:'Log 30 total days',                  color:'#FFD700'},
-  {id:'legend',      emoji:'⚡', name:'ScrollBye Legend',  desc:'Reach Level 10 (2700 XP)',           color:'#9B94FF'}
+  {id:'first_log',   emoji:'🌱', name:'First Log',          desc:'Complete your first survey',             color:'#43E97B'},
+  {id:'week_warrior',emoji:'🔥', name:'Week Warrior',        desc:'Reach a 7-day streak',                   color:'#FF6B6B'},
+  {id:'sleep_champ', emoji:'💤', name:'Sleep Champion',      desc:'Log 8+ hours sleep in a survey',         color:'#00D2FF'},
+  {id:'focus_master',emoji:'🎯', name:'Focus Master',        desc:'Achieve FSI above 80',                   color:'#6C63FF'},
+  {id:'consistency', emoji:'🏆', name:'Consistency King',    desc:'Log 30 total days',                      color:'#FFD700'},
+  {id:'legend',      emoji:'⚡', name:'ScrollBye Legend',    desc:'Reach Level 10 (2700 XP)',               color:'#9B94FF'},
+  {id:'challenger',  emoji:'⚔️', name:'First Blood',         desc:'Send your first challenge',               color:'#FF6B6B'},
+  {id:'winner',      emoji:'🥇', name:'Challenge Winner',    desc:'Win a head-to-head challenge',            color:'#FFD700'},
+  {id:'unbeaten',    emoji:'👑', name:'Unbeaten',            desc:'Win 5 challenges in a row',               color:'#FFD700'},
+  {id:'night_owl',   emoji:'🦉', name:'Night Owl',           desc:'Log after 11 PM',                        color:'#9B94FF'},
+  {id:'early_bird',  emoji:'🌅', name:'Early Bird',          desc:'Log before 7 AM',                        color:'#FFB347'},
+  {id:'no_phone',    emoji:'📵', name:'Phone Free',          desc:'Zero phone checks during study',          color:'#43E97B'},
+  {id:'passive_zero',emoji:'🧘', name:'Digital Detox',       desc:'Log 0 passive screen hours',             color:'#43E97B'},
+  {id:'sleep_week',  emoji:'🛌', name:'Sleep Streak',        desc:'Sleep 8+ hrs for 7 days straight',       color:'#00D2FF'},
+  {id:'global',      emoji:'🌍', name:'Global Citizen',      desc:'Top 10 on global leaderboard',           color:'#00D2FF'},
+  {id:'comeback',    emoji:'💪', name:'Comeback Kid',        desc:'Improve FSI by 20+ points',              color:'#FF6B6B'},
+  {id:'perfect_week',emoji:'⭐', name:'Perfect Week',        desc:'Log every day for 7 days',               color:'#FFD700'},
+  {id:'researcher',  emoji:'🔬', name:'Researcher',          desc:'Fill all optional survey fields',        color:'#9B94FF'},
+  {id:'social',      emoji:'📣', name:'Spread the Word',     desc:'Share ScrollBye with 3 friends',         color:'#FF6B6B'},
+  {id:'top_fsi',     emoji:'🧠', name:'Peak Performance',    desc:'Achieve FSI of 90 or above',             color:'#6C63FF'}
 ];
 
-function checkBadges(logs,xp,streak,level){
+function checkBadges(logs,xp,streak,level,badgeData,myChallenges){
   var unlocked={};
   var daysLogged=logs?logs.length:0;
+  badgeData=badgeData||{};
+  var created=(myChallenges&&myChallenges.created)||[];
+  var responded=(myChallenges&&myChallenges.responded)||[];
 
-  // First Log
+  // ── Original 6 ──────────────────────────────────────────────
   if(daysLogged>=1) unlocked['first_log']=true;
-  // Week Warrior
   if(streak>=7) unlocked['week_warrior']=true;
-  // Sleep Champion — look for any log with sleep>=8
-  if(logs){
-    for(var i=0;i<logs.length;i++){
-      if(logs[i].sleepHours&&parseFloat(logs[i].sleepHours)>=8){unlocked['sleep_champ']=true;break;}
-    }
-  }
-  // Focus Master — FSI>80
-  if(logs){
-    for(var i=0;i<logs.length;i++){
-      var fsi=logs[i].fsi||logs[i].screenScore||0;
-      if(fsi>80){unlocked['focus_master']=true;break;}
-    }
-  }
-  // Consistency King
+  if(logs){for(var i=0;i<logs.length;i++){if(parseFloat(logs[i].sleepHours)>=8){unlocked['sleep_champ']=true;break;}}}
+  if(logs){for(var i=0;i<logs.length;i++){if(parseFloat(logs[i].fsi||0)>80){unlocked['focus_master']=true;break;}}}
   if(daysLogged>=30) unlocked['consistency']=true;
-  // ScrollBye Legend
   if(level>=10) unlocked['legend']=true;
+
+  // ── New 14 ──────────────────────────────────────────────────
+  // challenger: created at least one challenge
+  if(created.length>0||(badgeData.challengesCreated||0)>0) unlocked['challenger']=true;
+
+  // winner: won any challenge
+  if((badgeData.challengesWon||0)>0) unlocked['winner']=true;
+  if(!unlocked['winner']){
+    for(var i=0;i<responded.length;i++){
+      var r=responded[i];
+      if(r.won||(parseFloat(r.myFsi||0)>parseFloat((r.challenge||{}).challengerFSI||0))){unlocked['winner']=true;break;}
+    }
+  }
+
+  // unbeaten: 5+ consecutive wins
+  if((badgeData.consecutiveWins||0)>=5) unlocked['unbeaten']=true;
+
+  // night_owl: any log submitted after 11 PM
+  if(logs){for(var i=0;i<logs.length;i++){var ts=logs[i].timestamp||logs[i].createdAt;if(ts&&new Date(ts).getHours()>=23){unlocked['night_owl']=true;break;}}}
+
+  // early_bird: any log submitted 4–7 AM
+  if(logs){for(var i=0;i<logs.length;i++){var ts=logs[i].timestamp||logs[i].createdAt;if(ts){var h=new Date(ts).getHours();if(h>=4&&h<=7){unlocked['early_bird']=true;break;}}}}
+
+  // no_phone: any log with phoneChecks === 0
+  if(logs){for(var i=0;i<logs.length;i++){if(parseInt(logs[i].phoneChecks)===0){unlocked['no_phone']=true;break;}}}
+
+  // passive_zero: any log with passiveHours === 0
+  if(logs){for(var i=0;i<logs.length;i++){if(parseFloat(logs[i].passiveHours)===0){unlocked['passive_zero']=true;break;}}}
+
+  // sleep_week: last 7 logs all have sleep >= 8
+  if(logs&&logs.length>=7){var last7=logs.slice(-7);if(last7.every(function(l){return parseFloat(l.sleepHours)>=8;})){unlocked['sleep_week']=true;}}
+
+  // global: top 10 on leaderboard
+  if(badgeData.isTop10) unlocked['global']=true;
+
+  // comeback: any two consecutive logs with FSI improvement >= 20
+  if(logs&&logs.length>=2){for(var i=1;i<logs.length;i++){var prev=parseFloat(logs[i-1].fsi)||0,curr=parseFloat(logs[i].fsi)||0;if(curr-prev>=20){unlocked['comeback']=true;break;}}}
+
+  // perfect_week: streak >= 7
+  if(streak>=7) unlocked['perfect_week']=true;
+
+  // researcher: any log has all key fields filled in
+  if(logs){for(var i=0;i<logs.length;i++){var l=logs[i];if(l.studyHours!=null&&l.studyHours!==''&&l.focusQuality!=null&&l.focusQuality!==''&&l.mood!=null&&l.mood!==''&&l.phoneChecks!=null&&l.phoneChecks!==''){unlocked['researcher']=true;break;}}}
+
+  // social: 3+ shares tracked server-side
+  if((badgeData.socialShares||0)>=3) unlocked['social']=true;
+
+  // top_fsi: any log with FSI >= 90
+  if(logs){for(var i=0;i<logs.length;i++){if(parseFloat(logs[i].fsi)>=90){unlocked['top_fsi']=true;break;}}}
 
   return unlocked;
 }
@@ -431,6 +510,7 @@ function renderSparkline(fsiValues){
     },
     options:{
       responsive:true,maintainAspectRatio:false,
+      animation:{duration:400},
       plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ' FSI: '+ctx.parsed.y;}}}},
       scales:{
         x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'rgba(220,220,255,0.4)',font:{size:11}}},
@@ -442,14 +522,16 @@ function renderSparkline(fsiValues){
 
 // ── Main init ────────────────────────────────────────────────
 (function(){
-  Promise.all([fetch('/api/me'),fetch('/api/my-progress'),fetch('/api/my-submissions')])
-    .then(function(rs){return Promise.all(rs.map(function(r){return r.json();}));})
+  Promise.all([fetch('/api/me'),fetch('/api/my-progress'),fetch('/api/my-submissions'),fetch('/api/my-badge-data'),fetch('/api/my-challenges')])
+    .then(function(rs){return Promise.all(rs.map(function(r){return r.json().catch(function(){return {};})}));})
     .then(function(data){
-      var me=data[0], prog=data[1], subsData=data[2];
+      var me=data[0], prog=data[1], subsData=data[2], badgeData=data[3]||{}, myChallenges=data[4]||{};
       if(!me.loggedIn){location.href='/login?next=/profile';return;}
 
       // Nav avatar
       renderNavAvatar(me.avatar||null, me.username);
+      // Inject Challenges nav link
+      (function(){var nav=document.querySelector('.nav-links');if(nav&&!nav.querySelector('[href="/challenges"]')){var cl=document.createElement('a');cl.className='nav-link';cl.href='/challenges';cl.textContent='Challenges';nav.insertBefore(cl,nav.children[Math.min(2,nav.children.length)]);}}());
 
       // Use server submissions — server is the source of truth
       var xp   = prog&&prog.loggedIn?prog.xp:0;
@@ -529,7 +611,7 @@ function renderSparkline(fsiValues){
       renderSparkline(fsiHistory);
 
       // Badges
-      var unlockedMap=checkBadges(logs,xp,streak,levelInfo.level);
+      var unlockedMap=checkBadges(logs,xp,streak,levelInfo.level,badgeData,myChallenges);
       renderBadges(unlockedMap);
 
       // Show page
