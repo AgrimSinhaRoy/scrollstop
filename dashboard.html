@@ -212,6 +212,11 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 /* Grid row */
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.25rem;}
 @media(max-width:700px){.two-col{grid-template-columns:1fr;}.stat-row{grid-template-columns:1fr 1fr;}}
+@media(max-width:600px){
+  .navbar{padding:0 1.25rem;}
+  .nav-links{display:none;}
+  .orb{display:none;}
+}
 
 /* Insights */
 .insight-pill{
