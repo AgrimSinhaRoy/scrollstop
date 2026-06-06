@@ -154,7 +154,7 @@ body.in-landing{overflow:hidden;}
   letter-spacing:-1.5px;line-height:1;
   background:linear-gradient(135deg,#fff 0%,#8B83FF 30%,#00D2FF 60%,#43E97B 100%);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-  filter:drop-shadow(0 0 30px rgba(108,99,255,0.4));
+  /* filter:drop-shadow removed — causes invisible text on iOS Safari */
 }
 .logo-tagline{font-size:11px;letter-spacing:0.3em;text-transform:uppercase;color:var(--muted);margin-top:5px;}
 .logo-badge{
@@ -541,6 +541,40 @@ body.in-landing{overflow:hidden;}
 .fsi-history-card{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:1.5rem 1.5rem 1rem;margin-top:1.25rem;text-align:left;}
 .fsi-history-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.09em;margin-bottom:1rem;display:flex;align-items:center;gap:8px;}
 .fsi-history-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* ═══ MOBILE RESPONSIVE ═══ */
+@media(max-width:600px){
+  .wrapper{padding:0 1rem 5rem;}
+  /* Make logo wordmark smaller on mobile */
+  .logo-wordmark{font-size:34px;}
+  /* Survey step cards */
+  .section-card{padding:1.5rem 1.25rem;border-radius:18px;}
+  /* Mood grid: 5 items, reduce padding on small screens */
+  .mood-face{padding:8px 2px 6px;font-size:20px;}
+  .mood-val{font-size:8px;}
+  /* Summary strip: stack to 1 col instead of forced 3 */
+  .summary-strip{grid-template-columns:1fr;gap:0.5rem;padding:1rem;}
+  .sum-val{font-size:22px;}
+  /* QR share row: stack vertically */
+  .qr-row,.qr-wrap{flex-direction:column;}
+  .qr-text{min-width:0;}
+  /* Score results: slightly smaller numbers */
+  .score-num{font-size:clamp(48px,18vw,80px)!important;}
+  /* App grid: always 2 per row on small screens */
+  .app-grid{grid-template-columns:repeat(2,1fr);}
+  /* Leaderboard modal width */
+  .lb-modal-card{width:95vw;max-width:95vw;padding:1.5rem 1.25rem;}
+  /* Insight card padding */
+  .insight-card,.insight-wrap{padding:1.25rem 1rem;}
+  /* Mismatch card */
+  .mismatch-card{padding:1.75rem 1.25rem;}
+  /* Next/Submit buttons */
+  .submit-btn,.next-btn{font-size:15px;padding:15px;}
+  /* Hero stats row */
+  .hero-stats{gap:1rem;}
+  /* Disable heavy blur animation on mobile for performance */
+  .orb{display:none;}
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>

@@ -342,10 +342,20 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 /* ── RESPONSIVE ── */
 @media(max-width:600px){
   .results-hero{justify-content:center;}
-  .hero-text{text-align:center;}
+  .hero-text{text-align:center;min-width:0;}
   .hero-meta{justify-content:center;}
   .navbar{padding:0 1.25rem;}
   .nav-links .nav-link:nth-child(3),.nav-links .nav-link:nth-child(4){display:none;}
+  /* FSI ring: smaller on mobile */
+  .fsi-svg-container{width:170px;height:170px;}
+  /* Disable heavy blur orbs on mobile for performance */
+  .orb{display:none;}
+  /* Challenge card */
+  .challenge-card{padding:1.5rem 1.25rem;}
+}
+@media(max-width:400px){
+  .fsi-svg-container{width:140px;height:140px;}
+  .hero-greeting{font-size:1.5rem;}
 }
 </style>
 </head>
