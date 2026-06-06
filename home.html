@@ -638,10 +638,6 @@ section{position:relative;z-index:1;}
 <!-- ══ HERO ══ -->
 <section class="hero-section" id="hero">
   <div class="hero-inner">
-    <div class="hero-eyebrow">
-      <span class="eyebrow-dot"></span>
-      Teen Focus Research
-    </div>
     <h1 class="hero-heading">
       <span class="line1">How Scrolling</span>
       <span class="line2">Stole Your Focus</span>
@@ -912,7 +908,7 @@ section{position:relative;z-index:1;}
     </h2>
     <p class="cta-sub">Answer 6 questions. Get your Focus Sustainability Index. Understand your attention habits better than ever before.</p>
     <a class="cta-btn" href="/survey">
-      Start the Survey — It's Free
+      Start the Survey
       <span class="arrow">→</span>
     </a>
     <p class="cta-note">Anonymous option available · No account required · <a href="https://github.com/AgrimSinhaRoy/scrollstop" target="_blank">Open source on GitHub</a></p>
@@ -1010,7 +1006,7 @@ section{position:relative;z-index:1;}
   // ══ LEADERBOARD PREVIEW ══
   var _hlbLevelColors={1:'rgba(108,99,255,0.8)',2:'rgba(108,99,255,0.85)',3:'rgba(0,210,255,0.8)',4:'rgba(0,210,255,0.9)',5:'rgba(67,233,123,0.8)',6:'rgba(67,233,123,0.9)',7:'rgba(255,179,71,0.9)',8:'rgba(255,107,107,0.9)',9:'rgba(255,107,107,1)',10:'#FFD700'};
   var _xpHomeFetched=false;
-  function switchHomeLbTab(tab){
+  window.switchHomeLbTab=function switchHomeLbTab(tab){
     document.getElementById('hlb-tab-fsi').classList.toggle('hlb-tab-active',tab==='fsi');
     document.getElementById('hlb-tab-xp').classList.toggle('hlb-tab-active',tab==='xp');
     document.getElementById('hlb-fsi-panel').style.display=tab==='fsi'?'':'none';
