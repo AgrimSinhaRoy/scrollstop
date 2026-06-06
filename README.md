@@ -14,8 +14,7 @@
 
 <br/>
 
-<!-- Replace the paths below with real screenshots once captured -->
-<img src="docs/screenshots/hero.png" alt="ScrollBye landing page" width="780"/>
+<img src="public/screenshots/scrollbye.png" alt="ScrollBye — product screenshot" width="780"/>
 
 </div>
 
@@ -83,16 +82,7 @@ Scores are anonymous by default. Sign up to claim your score, appear on the **gl
 
 ## Screenshots
 
-> Replace the placeholder paths below with actual screenshot files in `docs/screenshots/`.
-
-| Page | Preview |
-|---|---|
-| Landing | ![Landing](docs/screenshots/landing.png) |
-| Survey Wizard | ![Survey](docs/screenshots/survey.png) |
-| Your FSI Results | ![Results](docs/screenshots/results.png) |
-| Leaderboard | ![Leaderboard](docs/screenshots/leaderboard.png) |
-| Challenge Page | ![Challenge](docs/screenshots/challenge.png) |
-| Dashboard | ![Dashboard](docs/screenshots/dashboard.png) |
+![ScrollBye product screenshot](public/screenshots/scrollbye.png)
 
 ---
 
