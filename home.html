@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ScrollBye — Reclaim Your Focus</title>
+<!-- Prefetch login/survey so navigation feels instant on mobile -->
+<link rel="prefetch" href="/login">
+<link rel="prefetch" href="/survey">
+<!-- Prefetch login/survey so navigation feels instant on mobile -->
+<link rel="prefetch" href="/login">
+<link rel="prefetch" href="/survey">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -561,6 +567,8 @@ section{position:relative;z-index:1;}
 
   /* ── Disable heavy blur orbs on mobile for performance ── */
   .orb{display:none;}
+  /* Remove backdrop-filter on drawer — blurring canvas causes stutter on mobile */
+  .mobile-drawer{backdrop-filter:none;background:rgba(4,5,13,0.98);}
 }
 }
 </style>
