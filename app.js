@@ -8,11 +8,17 @@ const bcrypt = require('bcrypt');
 const multer = require('multer');
 const crypto = require('crypto');
 const mongoose = require('mongoose');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 // ── MongoDB connection ────────────────────────────────────────
 const MONGODB_URI = process.env.MONGODB_URI;
 if (!MONGODB_URI || MONGODB_URI.includes('<user>')) {
   console.error('ERROR: Set MONGODB_URI in your .env file before starting.');
+  process.exit(1);
+}
+if (!process.env.SESSION_SECRET) {
+  console.error('ERROR: Set SESSION_SECRET in your .env file before starting.');
   process.exit(1);
 }
 mongoose.connect(MONGODB_URI).then(() => {
@@ -126,14 +132,42 @@ app.set('views', path.join(__dirname, 'views'));
 // ── Middleware ────────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+app.use(express.json({ limit: '50kb' }));
 app.use(methodOverride('_method'));
+
+// ── Security headers ──────────────────────────────────────────
+app.use(helmet({
+  contentSecurityPolicy: false, // disabled to avoid breaking inline scripts in HTML files
+  crossOriginEmbedderPolicy: false,
+}));
+
+// ── Rate limiting ──────────────────────────────────────────────
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20,
+  message: { ok: false, error: 'Too many attempts. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+const surveyLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10,
+  message: { ok: false, error: 'Too many submissions. Slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 app.use(session({
   store: MongoStore.create({ mongoUrl: MONGODB_URI, dbName: 'scrollbye_dev', ttl: 86400 }),
-  secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 7 * 24 * 60 * 60 * 1000 }
+  cookie: {
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+  }
 }));
 
 // ── In-memory legacy data (goals/sessions views — not critical) ─
@@ -220,36 +254,47 @@ app.get('/api/me', async (req, res) => {
 });
 
 // ── POST /auth/login ──────────────────────────────────────────
-app.post('/auth/login', async (req, res) => {
-  const identifier = (req.body.identifier || '').trim();
-  const password   =  req.body.password   || '';
+app.post('/auth/login', authLimiter, async (req, res) => {
+  const identifier = String(req.body.identifier || '').trim().slice(0, 60);
+  const password   = String(req.body.password   || '');
   if (!identifier || !password) return res.json({ ok: false, error: 'Please fill in all fields.' });
   const user = await User.findOne({ username: { $regex: new RegExp('^' + identifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') } });
-  if (!user) return res.json({ ok: false, error: 'No account found with that username.' });
+  if (!user) return res.json({ ok: false, error: 'Invalid username or password.' });
   const match = await bcrypt.compare(password, user.passwordHash);
-  if (!match) return res.json({ ok: false, error: 'Incorrect password.' });
+  if (!match) return res.json({ ok: false, error: 'Invalid username or password.' });
   if (user.banned) return res.json({ ok: false, error: 'This account has been suspended.' });
-  if (req.body.remember) req.session.cookie.maxAge = 30 * 24 * 60 * 60 * 1000;
-  req.session.userId   = user.id;
-  req.session.username = user.username;
-  res.json({ ok: true, redirect: '/' });
+  const maxAge = req.body.remember ? 30 * 24 * 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
+  // Regenerate session ID to prevent session fixation attacks
+  req.session.regenerate(function(err) {
+    if (err) return res.json({ ok: false, error: 'Session error. Please try again.' });
+    req.session.userId   = user.id;
+    req.session.username = user.username;
+    req.session.cookie.maxAge = maxAge;
+    res.json({ ok: true, redirect: '/' });
+  });
 });
 
 // ── POST /auth/register ───────────────────────────────────────
-app.post('/auth/register', async (req, res) => {
-  const username = (req.body.username || '').trim();
-  const password =  req.body.password || '';
-  const dob      =  req.body.dob      || '';
-  if (!username || username.length < 3) return res.json({ ok: false, error: 'Username must be at least 3 characters.' });
-  if (password.length < 8) return res.json({ ok: false, error: 'Password must be at least 8 characters.' });
-  if (!dob) return res.json({ ok: false, error: 'Date of birth is required.' });
+app.post('/auth/register', authLimiter, async (req, res) => {
+  const username = String(req.body.username || '').trim();
+  const password = String(req.body.password || '');
+  const dob      = String(req.body.dob      || '');
+  if (!username || username.length < 3)  return res.json({ ok: false, error: 'Username must be at least 3 characters.' });
+  if (username.length > 30)              return res.json({ ok: false, error: 'Username must be 30 characters or fewer.' });
+  if (!/^[a-zA-Z0-9_.-]+$/.test(username)) return res.json({ ok: false, error: 'Username can only contain letters, numbers, underscores, hyphens, and dots.' });
+  if (password.length < 8)               return res.json({ ok: false, error: 'Password must be at least 8 characters.' });
+  if (!dob)                              return res.json({ ok: false, error: 'Date of birth is required.' });
   const exists = await User.findOne({ username: { $regex: new RegExp('^' + username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') } });
   if (exists) return res.json({ ok: false, error: 'That username is already taken.' });
   const hash = await bcrypt.hash(password, 12);
   const user = await User.create({ id: Date.now(), username, passwordHash: hash, dob, createdAt: new Date().toISOString() });
-  req.session.userId   = user.id;
-  req.session.username = user.username;
-  res.json({ ok: true, redirect: '/' });
+  // Regenerate session ID to prevent session fixation attacks
+  req.session.regenerate(function(err) {
+    if (err) return res.json({ ok: false, error: 'Session error. Please try again.' });
+    req.session.userId   = user.id;
+    req.session.username = user.username;
+    res.json({ ok: true, redirect: '/' });
+  });
 });
 
 // ── GET /auth/logout ──────────────────────────────────────────
@@ -262,7 +307,7 @@ const SURVEY_FIELDS = ['participantName','isAnonymous','grade','school','country
   'studyHours','phoneChecks',
   'screenScore','sleepScore','moodScore','focusScore'];
 
-app.post('/survey/submit', async (req, res) => {
+app.post('/survey/submit', surveyLimiter, async (req, res) => {
   const safe = {};
   SURVEY_FIELDS.forEach(k => { if (req.body[k] !== undefined) safe[k] = req.body[k]; });
   const doc = { id: Date.now(), timestamp: new Date().toISOString(), userId: req.session.userId || null, username: req.session.username || null, ...safe };

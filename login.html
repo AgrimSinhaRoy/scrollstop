@@ -299,7 +299,8 @@ function doLogin(){
         showOk('Welcome back! Redirecting…');
         setTimeout(function(){
           var p=new URLSearchParams(location.search).get('next');
-          if(p){location.href=p;return;}
+          // Only follow relative paths — never redirect to external URLs (open redirect prevention)
+          if(p && p.startsWith('/') && !p.startsWith('//')){location.href=p;return;}
           Promise.all([fetch('/api/me'),fetch('/api/my-progress')])
             .then(function(rs){return Promise.all(rs.map(function(r){return r.json();}));})
             .then(function(data){
@@ -347,7 +348,8 @@ function doSignup(){
         showOk('Account created! Redirecting…');
         setTimeout(function(){
           var p=new URLSearchParams(location.search).get('next');
-          if(p){location.href=p;return;}
+          // Only follow relative paths — never redirect to external URLs (open redirect prevention)
+          if(p && p.startsWith('/') && !p.startsWith('//')){location.href=p;return;}
           location.href='/survey';
         },700);
       }
