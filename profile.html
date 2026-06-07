@@ -531,7 +531,7 @@ function renderSparkline(fsiValues){
       // Nav avatar
       renderNavAvatar(me.avatar||null, me.username);
       // Inject Challenges nav link
-      (function(){var nav=document.querySelector('.nav-links');if(nav&&!nav.querySelector('[href="/challenges"]')){var cl=document.createElement('a');cl.className='nav-link';cl.href='/challenges';cl.textContent='Challenges';nav.insertBefore(cl,nav.children[Math.min(2,nav.children.length)]);}}());
+      (function(){var nav=document.querySelector('.nav-links');if(nav&&!nav.querySelector('[href="/challenges"]')){var cl=document.createElement('a');cl.className='nav-link';cl.href='/challenges';cl.textContent='Challenges';nav.insertBefore(cl,nav.children[Math.min(1,nav.children.length)]);}}());
 
       // Use server submissions — server is the source of truth
       var xp   = prog&&prog.loggedIn?prog.xp:0;

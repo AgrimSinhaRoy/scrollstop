@@ -549,37 +549,71 @@ function getFsiColor(fsi){
 function fmt(n){return typeof n==='number'?n.toFixed(1):n;}
 
 function generateInsights(logs){
-  if(!logs||logs.length<2) return null;
+  if(!logs||logs.length<1) return null;
   var insights=[];
   var sorted=logs.slice().sort(function(a,b){return a.date<b.date?-1:1;});
   var last=sorted[sorted.length-1];
   var prev=sorted.length>=2?sorted[sorted.length-2]:null;
 
-  // FSI trend
+  // ── FSI trend ──
   if(prev){
     var delta=last.fsi-prev.fsi;
-    if(delta>5) insights.push({icon:'📈',text:'Your FSI <strong>improved by '+delta.toFixed(1)+'</strong> compared to yesterday — great progress!'});
-    else if(delta<-5) insights.push({icon:'📉',text:'Your FSI dropped by '+Math.abs(delta).toFixed(1)+' vs yesterday. Try reducing passive screen time.'});
-    else insights.push({icon:'➡️',text:'Your FSI held steady at <strong>'+last.fsi.toFixed(1)+'</strong>. Consistency is a win!'});
+    if(delta>5) insights.push({icon:'📈',text:'Your FSI <strong>improved by '+delta.toFixed(1)+' points</strong> since your last log — keep the momentum going!'});
+    else if(delta<-5) insights.push({icon:'📉',text:'Your FSI dipped by <strong>'+Math.abs(delta).toFixed(1)+' points</strong> since last time. Reducing passive screen time is the fastest way to recover.'});
+    else insights.push({icon:'➡️',text:'Your FSI held steady at <strong>'+last.fsi.toFixed(1)+'</strong>. Consistency itself is a win — keep logging!'});
+  } else {
+    insights.push({icon:'🎯',text:'Your first FSI is <strong>'+last.fsi.toFixed(1)+'/100</strong>. Log again tomorrow to track your progress!'});
   }
 
-  // Sleep
+  // ── Sleep ──
   var sl=parseFloat(last.sleep)||0;
-  if(sl<6) insights.push({icon:'😴',text:'You slept only <strong>'+fmt(sl)+'h</strong> — aim for 7–9 hours to boost your FSI and XP gains.'});
-  else if(sl>=7&&sl<=9) insights.push({icon:'🌙',text:'Perfect sleep of <strong>'+fmt(sl)+'h</strong>! You earned a sleep bonus in XP.'});
-
-  // Phone checks
-  var ch=parseInt(last.checks)||0;
-  if(ch===0) insights.push({icon:'📵',text:'Zero phone checks today — incredible discipline! +30 XP bonus earned.'});
-  else if(ch>10) insights.push({icon:'📱',text:'<strong>'+ch+' phone checks</strong> today. Try keeping your phone in another room while studying.'});
-
-  // 7-day avg
-  if(logs.length>=3){
-    var avg=logs.reduce(function(s,e){return s+e.fsi;},0)/logs.length;
-    insights.push({icon:'📊',text:'Your <strong>'+logs.length+'-day FSI average</strong> is '+avg.toFixed(1)+'.'});
+  if(sl>0){
+    if(sl<6) insights.push({icon:'😴',text:'You slept only <strong>'+fmt(sl)+'h</strong> — research shows 7–9h is optimal for focus and memory consolidation.'});
+    else if(sl>=7&&sl<=9) insights.push({icon:'🌙',text:'Excellent sleep of <strong>'+fmt(sl)+'h</strong>! Optimal sleep earned you a +20 XP bonus and boosts your FSI sleep component.'});
+    else if(sl>9) insights.push({icon:'🛏️',text:'You slept <strong>'+fmt(sl)+'h</strong> — slightly above optimal. Oversleeping can cause grogginess; 7–9h is the sweet spot.'});
   }
 
-  return insights.slice(0,3);
+  // ── Phone checks ──
+  var ch=parseInt(last.checks)||0;
+  if(ch===0) insights.push({icon:'📵',text:'Zero phone checks — outstanding focus discipline! You earned a <strong>+30 XP bonus</strong> for this.'});
+  else if(ch<=2) insights.push({icon:'✅',text:'Only <strong>'+ch+' phone check'+(ch>1?'s':'')+'</strong> — great restraint! You earned a +15 XP bonus.'});
+  else if(ch<=5) insights.push({icon:'📱',text:'<strong>'+ch+' phone checks</strong> today. Reducing to under 3 unlocks a bigger XP bonus and improves your focus score.'});
+  else insights.push({icon:'⚠️',text:'<strong>'+ch+' phone checks</strong> today. Each interruption costs ~23 min of deep focus. Try keeping your phone in another room.'});
+
+  // ── Study hours ──
+  var st=parseFloat(last.study)||0;
+  if(st===0) insights.push({icon:'📚',text:'No study hours logged today. Even 30 minutes of focused study makes a measurable difference in your FSI.'});
+  else if(st>=3) insights.push({icon:'📚',text:'<strong>'+fmt(st)+'h of study</strong> today — serious commitment! That puts you in the top tier for academic engagement.'});
+  else insights.push({icon:'📖',text:'<strong>'+fmt(st)+'h of study</strong> today. Pushing to 2–3 hours would meaningfully boost your focus component.'});
+
+  // ── Passive screen time ──
+  var passive=parseFloat(last.passive)||0;
+  if(passive>4) insights.push({icon:'📺',text:'<strong>'+fmt(passive)+'h of passive screen time</strong> (scrolling/video) — your biggest FSI drag. Cutting it by 1h could add ~15 FSI points.'});
+  else if(passive<=1) insights.push({icon:'🚀',text:'Low passive screen time of <strong>'+fmt(passive)+'h</strong> — your screen score is well-optimised!'});
+
+  // ── Mood ──
+  var mood=parseInt(last.mood)||3;
+  if(mood<=2) insights.push({icon:'😟',text:'Low mood reported today. Mood directly impacts FSI — light exercise, quality sleep, and reduced screen time can help.'});
+  else if(mood===5) insights.push({icon:'😊',text:'Top mood today! A positive mental state naturally elevates your focus and productivity scores.'});
+
+  // ── Focus quality ──
+  var fq=parseInt(last.focus)||3;
+  if(fq<=2) insights.push({icon:'🧠',text:'Low focus quality today. Try the Pomodoro technique: 25 min focused work, 5 min break — it dramatically improves concentration.'});
+  else if(fq>=5) insights.push({icon:'⚡',text:'Peak focus quality today! Replicate the conditions: same sleep time, same study environment.'});
+
+  // ── Multi-day average + trend ──
+  if(sorted.length>=3){
+    var avg=sorted.reduce(function(s,e){return s+e.fsi;},0)/sorted.length;
+    var recentAvg=sorted.slice(-3).reduce(function(s,e){return s+e.fsi;},0)/Math.min(3,sorted.length);
+    var earlyAvg=sorted.length>=6?sorted.slice(0,3).reduce(function(s,e){return s+e.fsi;},0)/3:null;
+    var trendStr=earlyAvg!==null?(recentAvg-earlyAvg>3?' 📈 trending up':recentAvg-earlyAvg<-3?' 📉 trending down':' stable'):'';
+    insights.push({icon:'📊',text:'<strong>'+sorted.length+'-day FSI average: '+avg.toFixed(1)+'</strong>'+trendStr+'.'});
+  }
+
+  // ── Streak motivation ──
+  if(sorted.length>=7) insights.push({icon:'🔥',text:'You\'ve logged <strong>'+sorted.length+' days</strong> of data! Your consistency is building a reliable picture of your focus habits.'});
+
+  return insights.slice(0,6);
 }
 
 // ── LEADERBOARD ──
@@ -602,9 +636,10 @@ function renderFsiLeaderboard(lb, username){
     var school=e.school?(e.school.slice(0,20)+(e.school.length>20?'…':'')):'';
     var row=document.createElement('div');
     row.className='lb-row'+(isMe?' lb-me':'');
+    var daysLabel=e.days>1?' <span style="font-size:10px;color:var(--muted);font-weight:400">('+e.days+'d avg)</span>':'';
     row.innerHTML='<div class="lb-rank">'+lbRankHtml(i)+'</div>'+
       '<div class="lb-avatar-sm" style="background:'+lbColor(e.displayName)+'">'+lbEsc(e.displayName[0].toUpperCase())+'</div>'+
-      '<div class="lb-name-wrap"><div class="lb-display-name">'+lbEsc(e.displayName)+(isMe?' <span style="font-size:10px;color:var(--accent)">(you)</span>':'')+'</div>'+
+      '<div class="lb-name-wrap"><div class="lb-display-name">'+lbEsc(e.displayName)+(isMe?' <span style="font-size:10px;color:var(--accent)">(you)</span>':'')+daysLabel+'</div>'+
       (school?'<div class="lb-school">'+lbEsc(school)+'</div>':'')+'</div>'+
       '<span class="'+fsiCls+'">'+e.fsi+'</span>';
     list.appendChild(row);
@@ -651,7 +686,7 @@ function loadXpLeaderboard(username){
       var me=results[0];var prog=results[1];var subsData=results[2];
       if(!me.loggedIn){location.href='/login?next=/dashboard';return;}
       // Inject Challenges nav link
-      (function(){var nav=document.querySelector('.nav-links');if(nav&&!nav.querySelector('[href="/challenges"]')){var cl=document.createElement('a');cl.className='nav-link';cl.href='/challenges';cl.textContent='Challenges';nav.insertBefore(cl,nav.children[Math.min(2,nav.children.length)]);}}());
+      (function(){var nav=document.querySelector('.nav-links');if(nav&&!nav.querySelector('[href="/challenges"]')){var cl=document.createElement('a');cl.className='nav-link';cl.href='/challenges';cl.textContent='Challenges';nav.insertBefore(cl,nav.children[Math.min(1,nav.children.length)]);}}());
       // Render avatar or initial circle in nav
       var navAw=document.getElementById('nav-avatar-wrap');
       if(navAw){navAw.innerHTML=me.avatar?'<img class="nav-avatar" src="'+me.avatar+'" alt="avatar">':

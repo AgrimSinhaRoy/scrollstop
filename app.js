@@ -520,17 +520,40 @@ app.get('/api/my-latest-submission', async (req, res) => {
 
 // ── GET /api/leaderboard ──────────────────────────────────────
 app.get('/api/leaderboard', async (req, res) => {
-  const subs = await Submission.find({ userId: { $exists: true }, fsi: { $ne: null, $exists: true } }).sort({ fsi: -1 }).limit(200);
-  const seen = new Map();
+  // Fetch all submissions that belong to a registered user and have an FSI
+  const subs = await Submission.find({ userId: { $exists: true, $ne: null }, fsi: { $ne: null, $exists: true } })
+    .sort({ timestamp: -1 }).lean();
+
+  // Group by userId, accumulate FSI scores and keep latest metadata
+  const userMap = new Map();
   for (const s of subs) {
-    const u = await User.findOne({ id: s.userId });
-    const displayName = u ? u.username : (s.username || 'Unknown');
-    if (!seen.has(displayName) || (parseInt(s.fsi) || 0) > seen.get(displayName).fsi) {
-      seen.set(displayName, { id: s.id, displayName, grade: s.grade || null, school: s.school || null, fsi: parseInt(s.fsi) || 0, timestamp: s.timestamp });
+    const key = String(s.userId);
+    if (!userMap.has(key)) {
+      userMap.set(key, { userId: s.userId, fsiList: [], grade: s.grade || null, school: s.school || null, username: s.username });
     }
+    const entry = userMap.get(key);
+    entry.fsiList.push(parseFloat(s.fsi) || 0);
+    // latest metadata (first one seen because we sorted desc)
+    if (!entry.grade && s.grade) entry.grade = s.grade;
+    if (!entry.school && s.school) entry.school = s.school;
   }
-  const entries = [...seen.values()].sort((a, b) => b.fsi - a.fsi).slice(0, 50);
-  res.json(entries);
+
+  const entries = [];
+  for (const [, data] of userMap) {
+    const u = await User.findOne({ id: data.userId });
+    if (!u) continue;
+    const avg = data.fsiList.reduce((a, b) => a + b, 0) / data.fsiList.length;
+    entries.push({
+      displayName: u.username,
+      grade: data.grade,
+      school: data.school,
+      fsi: Math.round(avg * 10) / 10,
+      days: data.fsiList.length
+    });
+  }
+
+  entries.sort((a, b) => b.fsi - a.fsi);
+  res.json(entries.slice(0, 50));
 });
 
 // ── GET /api/xp-leaderboard ───────────────────────────────────
