@@ -725,7 +725,8 @@ body.in-landing{overflow:hidden;}
       </div>
       <div class="input-group" id="grp-name">
         <label class="input-label">Your name <span class="input-label-accent" style="background:rgba(108,99,255,0.12);color:var(--muted);">optional</span></label>
-        <input type="text" class="text-input" id="participant-name" placeholder="e.g. Alex..." autocomplete="off" oninput="playKeyClick();updateAnonPreview()">
+        <input type="text" class="text-input" id="participant-name" placeholder="e.g. Alex..." autocomplete="off" oninput="sanitizeName(this);playKeyClick();updateAnonPreview()">
+        <div id="name-hint" style="display:none;font-size:11px;color:var(--muted);margin-top:4px;">Names can only contain letters, spaces, hyphens and apostrophes.</div>
         <div class="anon-row">
           <label class="anon-toggle"><input type="checkbox" id="anon-toggle" onchange="updateAnonPreview()"><span class="anon-slider"></span></label>
           <span class="anon-note" id="anon-note">Show my name on the leaderboard</span>
@@ -779,7 +780,7 @@ body.in-landing{overflow:hidden;}
         <label class="input-label">Country</label>
         <div class="country-wrap">
           <input type="text" class="text-input" id="country-search" placeholder="Type to search country..." autocomplete="off"
-            oninput="filterCountries();clearErr('grp-country','card-s1');playKeyClick()"
+            oninput="_selectedCountry=null;filterCountries();clearErr('grp-country','card-s1');playKeyClick()"
             onfocus="openCountryDrop()" onblur="closeCountryDrop()">
           <div class="cs-dropdown" id="country-drop"></div>
         </div>
@@ -1659,13 +1660,13 @@ function submitForm(){
   // Collect and persist to server
   var formData={
     fsi:fsi,
-    participantName:document.getElementById('participant-name').value.trim()||null,
+    participantName:(document.getElementById('participant-name').value.trim().replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu,'').replace(/[0-9]/g,'').replace(/[^\p{L}\p{M}\s'\-]/gu,''))||null,
     isAnonymous:document.getElementById('anon-toggle').checked,
     grade:(document.querySelector('input[name=grade]:checked')||{}).value||null,
     school:(document.getElementById('school-custom-row').style.display!=='none'?document.getElementById('school-custom').value.trim():document.getElementById('school-search').value.trim())||null,
     age:(document.querySelector('input[name=age]:checked')||{}).value||null,
     gender:(document.querySelector('input[name=gender]:checked')||{}).value||null,
-    country:document.getElementById('country-search').value.trim(),
+    country:_selectedCountry||null,
     passiveHours:parseFloat(document.getElementById('passive-sl').value),
     activeHours:parseFloat(document.getElementById('active-sl').value),
     sleepHours:parseFloat(document.getElementById('sleep-sl').value)||null,
@@ -1983,7 +1984,26 @@ function closeSchoolDrop(){
   },200);
 }
 
+// ═══ NAME SANITIZER ═══
+function sanitizeName(el){
+  // Remove emojis (emoji unicode ranges) and digits
+  var raw=el.value;
+  var cleaned=raw
+    .replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu,'')
+    .replace(/[0-9]/g,'')
+    .replace(/[^\p{L}\p{M}\s'\-]/gu,'');
+  if(cleaned!==raw){
+    var pos=el.selectionStart-(raw.length-cleaned.length);
+    el.value=cleaned;
+    el.setSelectionRange(Math.max(0,pos),Math.max(0,pos));
+    document.getElementById('name-hint').style.display='block';
+  } else {
+    document.getElementById('name-hint').style.display='none';
+  }
+}
+
 // ═══ COUNTRIES ═══
+var _selectedCountry=null;
 var COUNTRIES=['Afghanistan','Albania','Algeria','Andorra','Angola','Antigua and Barbuda','Argentina','Armenia','Australia','Austria','Azerbaijan','Bahamas','Bahrain','Bangladesh','Barbados','Belarus','Belgium','Belize','Benin','Bhutan','Bolivia','Bosnia and Herzegovina','Botswana','Brazil','Brunei','Bulgaria','Burkina Faso','Burundi','Cabo Verde','Cambodia','Cameroon','Canada','Central African Republic','Chad','Chile','China','Colombia','Comoros','Congo','Costa Rica','Croatia','Cuba','Cyprus','Czech Republic','Denmark','Djibouti','Dominica','Dominican Republic','DR Congo','Ecuador','Egypt','El Salvador','Equatorial Guinea','Eritrea','Estonia','Eswatini','Ethiopia','Fiji','Finland','France','Gabon','Gambia','Georgia','Germany','Ghana','Greece','Grenada','Guatemala','Guinea','Guinea-Bissau','Guyana','Haiti','Honduras','Hungary','Iceland','India','Indonesia','Iran','Iraq','Ireland','Israel','Italy','Jamaica','Japan','Jordan','Kazakhstan','Kenya','Kiribati','Kuwait','Kyrgyzstan','Laos','Latvia','Lebanon','Lesotho','Liberia','Libya','Liechtenstein','Lithuania','Luxembourg','Madagascar','Malawi','Malaysia','Maldives','Mali','Malta','Marshall Islands','Mauritania','Mauritius','Mexico','Micronesia','Moldova','Monaco','Mongolia','Montenegro','Morocco','Mozambique','Myanmar','Namibia','Nauru','Nepal','Netherlands','New Zealand','Nicaragua','Niger','Nigeria','North Korea','North Macedonia','Norway','Oman','Pakistan','Palau','Palestine','Panama','Papua New Guinea','Paraguay','Peru','Philippines','Poland','Portugal','Qatar','Romania','Russia','Rwanda','Saint Kitts and Nevis','Saint Lucia','Saint Vincent and the Grenadines','Samoa','San Marino','São Tomé and Príncipe','Saudi Arabia','Senegal','Serbia','Seychelles','Sierra Leone','Singapore','Slovakia','Slovenia','Solomon Islands','Somalia','South Africa','South Korea','South Sudan','Spain','Sri Lanka','Sudan','Suriname','Sweden','Switzerland','Syria','Taiwan','Tajikistan','Tanzania','Thailand','Timor-Leste','Togo','Tonga','Trinidad and Tobago','Tunisia','Turkey','Turkmenistan','Tuvalu','Uganda','Ukraine','United Arab Emirates','United Kingdom','United States','Uruguay','Uzbekistan','Vanuatu','Vatican City','Venezuela','Vietnam','Yemen','Zambia','Zimbabwe'];
 
 function filterCountries(){
@@ -2005,6 +2025,7 @@ function filterCountries(){
 function openCountryDrop(){filterCountries();}
 
 function selectCountry(c){
+  _selectedCountry=c;
   document.getElementById('country-search').value=c;
   document.getElementById('country-drop').classList.remove('open');
   clearErr('grp-country','card-s1');
@@ -2014,6 +2035,11 @@ function closeCountryDrop(){
   setTimeout(function(){
     var d=document.getElementById('country-drop');
     if(d)d.classList.remove('open');
+    // If user typed but didn't pick from the list, reject the free text
+    var inp=document.getElementById('country-search');
+    if(inp&&!_selectedCountry){
+      inp.value='';
+    }
   },200);
 }
 
@@ -2061,7 +2087,7 @@ var stepChecks=[
     var e=[];
     if(!document.querySelector('input[name=age]:checked'))e.push({grp:'grp-age',card:'card-s1',msg:'Please select your age'});
     if(!document.querySelector('input[name=gender]:checked'))e.push({grp:'grp-gender',card:'card-s1',msg:'Please select your gender'});
-    if(!document.getElementById('country-search').value.trim())e.push({grp:'grp-country',card:'card-s1',msg:'Please select your country'});
+    if(!_selectedCountry)e.push({grp:'grp-country',card:'card-s1',msg:'Please select your country from the list'});
     return e;
   },
   function(){return[];},
