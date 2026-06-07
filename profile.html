@@ -218,7 +218,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   <div class="nav-links">
     <a class="nav-link" href="/dashboard">Dashboard</a>
     <a class="nav-link active" href="/profile">Profile</a>
-    <a class="nav-link" href="/survey">Take Survey</a>
+    <a class="nav-link" href="/survey" onclick="event.preventDefault();goToSurvey();">Take Survey</a>
   </div>
 
   <div class="nav-right">
@@ -620,6 +620,12 @@ function renderSparkline(fsiValues){
     })
     .catch(function(){location.href='/login?next=/profile';});
 })();
+
+function goToSurvey(){
+  fetch('/api/my-progress').then(function(r){return r.json();}).then(function(prog){
+    location.href=(prog.loggedIn&&prog.lastLogDate)?'/log-today':'/survey';
+  }).catch(function(){location.href='/survey';});
+}
 </script>
 </body>
 </html>

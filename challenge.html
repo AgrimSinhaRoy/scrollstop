@@ -159,7 +159,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   </a>
   <div class="nav-links">
     <a class="nav-link" href="/dashboard">Dashboard</a>
-    <a class="nav-link" href="/survey">Take Survey</a>
+    <a class="nav-link" href="/survey" onclick="event.preventDefault();goToSurvey();">Take Survey</a>
   </div>
   <div class="nav-right" id="nav-right">
     <a class="btn-secondary" href="/survey" style="padding:7px 16px;font-size:13px;">Take Survey →</a>
@@ -346,6 +346,12 @@ function toggleMobileNav(){document.querySelector('.nav-links').classList.toggle
     surveyBtn.textContent = 'Try Again →';
   }
 })();
+
+function goToSurvey(){
+  fetch('/api/my-progress').then(function(r){return r.json();}).then(function(prog){
+    location.href=(prog.loggedIn&&prog.lastLogDate)?'/log-today':'/survey';
+  }).catch(function(){location.href='/survey';});
+}
 </script>
 </body>
 </html>

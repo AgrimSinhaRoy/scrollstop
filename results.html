@@ -409,7 +409,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   <div class="nav-links">
     <a class="nav-link" href="/dashboard">Dashboard</a>
     <a class="nav-link active" href="/results">Results</a>
-    <a class="nav-link" href="/survey">Take Survey</a>
+    <a class="nav-link" href="/survey" onclick="event.preventDefault();goToSurvey();">Take Survey</a>
     <a class="nav-link" href="/profile">Profile</a>
   </div>
 
@@ -424,7 +424,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
       <div class="empty-icon">📊</div>
       <div class="empty-title">No results yet</div>
       <p class="empty-sub">You haven't taken the survey yet. Complete it to unlock your Focus Score, component breakdown, cost analysis, and personalised insights.</p>
-      <a class="cta-log-btn" href="/survey">Take the Survey →</a>
+      <a class="cta-log-btn" href="/survey" onclick="event.preventDefault();goToSurvey();">Take the Survey →</a>
     </div>
   </div>
 </div>
@@ -615,7 +615,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
     <!-- CTA BUTTONS -->
     <div class="cta-row">
-      <a class="cta-primary" href="/survey" id="log-again-btn">Log Again Tomorrow →</a>
+      <a class="cta-primary" href="/survey" id="log-again-btn" onclick="event.preventDefault();goToSurvey();">Log Again Tomorrow →</a>
       <div class="log-again-countdown-card" id="log-again-countdown" style="display:none">
         <div class="lac-title">🌙 Come back tomorrow to log again</div>
         <div class="lac-timer" id="countdown-display">Calculating…</div>
@@ -1588,6 +1588,12 @@ function showCelebBanner(fsi){
     });
   });
 })();
+
+function goToSurvey(){
+  fetch('/api/my-progress').then(function(r){return r.json();}).then(function(prog){
+    location.href=(prog.loggedIn&&prog.lastLogDate)?'/log-today':'/survey';
+  }).catch(function(){location.href='/survey';});
+}
 </script>
 </body>
 </html>

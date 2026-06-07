@@ -131,7 +131,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
   </a>
   <div class="nav-links">
     <a class="nav-link" href="/dashboard">Dashboard</a>
-    <a class="nav-link" href="/survey">Full Survey</a>
+    <a class="nav-link" href="/survey" onclick="event.preventDefault();goToSurvey();">Full Survey</a>
   </div>
   <div class="nav-right" id="nav-right"></div>
 </nav>
@@ -273,6 +273,8 @@ async function checkIfAlreadyLogged(){
 checkIfAlreadyLogged();
 
 // ── NAV ──────────────────────────────────────────────────
+var _challengeToken = new URLSearchParams(window.location.search).get('challenge') || '';
+
 fetch('/api/me').then(function(r){return r.json();}).then(function(me){
   if(me.loggedIn){
     var a=me.avatar?'<a href="/profile"><img class="nav-avatar" src="'+me.avatar+'" alt="avatar"></a>':'<a href="/profile" class="nav-avatar-initial">'+me.username[0].toUpperCase()+'</a>';
@@ -318,6 +320,7 @@ async function submitLog(){
   var fsi=calcFSI(passive,active,sleep,selectedMood,study,selectedChecks);
 
   var payload={fsi:fsi,passiveHours:passive,activeHours:active,sleepHours:sleep,mood:selectedMood,studyHours:study,phoneChecks:selectedChecks,isAnonymous:true};
+  if(_challengeToken)payload.challengeToken=_challengeToken;
 
   try{
     await fetch('/survey/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
@@ -326,6 +329,12 @@ async function submitLog(){
   // Celebrate then redirect
   document.getElementById('celebrate-overlay').style.display='flex';
   setTimeout(function(){window.location.href='/results';},2000);
+}
+
+function goToSurvey(){
+  fetch('/api/my-progress').then(function(r){return r.json();}).then(function(prog){
+    location.href=(prog.loggedIn&&prog.lastLogDate)?'/log-today':'/survey';
+  }).catch(function(){location.href='/survey';});
 }
 </script>
 </body>

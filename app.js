@@ -179,7 +179,18 @@ app.get('/', (req, res) => {
   if (req.session.userId) return res.redirect('/dashboard');
   res.sendFile(path.join(__dirname, 'home.html'));
 });
-app.get('/survey',  (req, res) => res.sendFile(path.join(__dirname, 'scrollstop2.html')));
+app.get('/survey', async (req, res) => {
+  if (req.session.userId) {
+    try {
+      const user = await User.findOne({ id: req.session.userId });
+      if (user && user.lastLogDate) {
+        const challengeParam = req.query.challenge ? '?challenge=' + encodeURIComponent(req.query.challenge) : '';
+        return res.redirect('/log-today' + challengeParam);
+      }
+    } catch(e) {}
+  }
+  res.sendFile(path.join(__dirname, 'scrollstop2.html'));
+});
 app.get('/results', (req, res) => res.sendFile(path.join(__dirname, 'results.html')));
 app.get('/log-today', (req, res) => {
   if (!req.session.userId) return res.redirect('/login?next=/log-today');

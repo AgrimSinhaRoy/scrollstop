@@ -324,7 +324,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
   <div class="nav-links">
     <a class="nav-link active" href="/dashboard">Dashboard</a>
     <a class="nav-link" href="/profile">Profile</a>
-    <a class="nav-link" href="/survey">Take Survey</a>
+    <a class="nav-link" href="/survey" onclick="event.preventDefault();goToSurvey();">Take Survey</a>
   </div>
 
   <div class="nav-right">
@@ -352,7 +352,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
         <div class="xp-bar-track"><div class="xp-bar-fill" style="width:0%"></div></div>
       </div>
 
-      <a class="cta-log-btn" href="/survey">Log Your First Day →</a>
+      <a class="cta-log-btn" href="/survey" onclick="event.preventDefault();goToSurvey();">Log Your First Day →</a>
     </div>
 
     <div class="locked-grid">
@@ -387,6 +387,17 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
       <div class="section-eyebrow"><span class="eyebrow-dot"></span>Your Dashboard</div>
       <div class="dash-greeting" id="ret-greeting">Welcome back!</div>
       <div class="dash-date" id="ret-date"></div>
+    </div>
+
+    <!-- Midnight reminder permission prompt -->
+    <div id="notif-prompt" style="display:none;background:rgba(255,179,71,0.08);border:1px solid rgba(255,179,71,0.25);border-radius:14px;padding:1rem 1.25rem;margin-bottom:1rem;align-items:center;gap:12px;">
+      <span style="font-size:24px;">🔔</span>
+      <div style="flex:1;">
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;color:var(--text);margin-bottom:3px;">Enable midnight reminders</div>
+        <div style="font-size:12px;color:var(--muted);">Get notified at midnight to log your daily survey and keep your streak alive.</div>
+      </div>
+      <button onclick="enableNotifications()" style="padding:8px 16px;border-radius:20px;background:linear-gradient(135deg,#FFB347,#FF6B35);border:none;color:white;font-family:'Syne',sans-serif;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap;">Enable</button>
+      <button onclick="document.getElementById('notif-prompt').style.display='none'" style="background:transparent;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 4px;">×</button>
     </div>
 
     <!-- Stat row: FSI, Streak, Total XP, Days Logged -->
@@ -478,7 +489,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
     <!-- Survey CTA -->
     <div style="text-align:center;margin-top:1.5rem;" id="log-cta-wrap">
-      <a class="cta-log-btn" href="/survey" id="log-today-btn" style="font-size:14px;padding:13px 32px;">Log Today's Focus →</a>
+      <a class="cta-log-btn" href="/survey" id="log-today-btn" onclick="event.preventDefault();goToSurvey();" style="font-size:14px;padding:13px 32px;">Log Today's Focus →</a>
     </div>
   </div>
 </div>
@@ -762,9 +773,74 @@ function loadXpLeaderboard(username){
         logBtn.textContent='Log Today 📝';
       }
 
+      // Show notification prompt if browser supports it and user hasn't decided yet
+      if('Notification' in window && Notification.permission==='default'){
+        document.getElementById('notif-prompt').style.display='flex';
+      }
+      setupMidnightReminder(me);
+
     })
     .catch(function(){loading.style.display='none';location.href='/login?next=/dashboard';});
 })();
+
+// ── Midnight survey reminder ─────────────────────────────────
+function setupMidnightReminder(me){
+  if(!me||!me.loggedIn)return;
+  if(!('Notification' in window))return;
+  if(Notification.permission!=='granted')return;
+
+  function msUntilMidnight(){
+    var now=new Date();
+    var midnight=new Date(now);
+    midnight.setHours(24,0,0,0);
+    return midnight-now;
+  }
+
+  function scheduleReminder(){
+    var delay=msUntilMidnight();
+    setTimeout(function(){
+      fetch('/api/my-progress').then(function(r){return r.json();}).then(function(p){
+        var today=new Date().toISOString().split('T')[0];
+        if(p.lastLogDate!==today){
+          var notif=new Notification('ScrollBye — Daily Log 🎯',{
+            body:'New day, new score. Log your screen time and keep your streak alive 🔥',
+            icon:'/scrollbye.png',
+            badge:'/scrollbye.png',
+            tag:'daily-reminder',
+            requireInteraction:false
+          });
+          notif.onclick=function(){window.focus();goToSurvey();notif.close();};
+        }
+        scheduleReminder();
+      }).catch(function(){
+        var notif=new Notification('ScrollBye — Daily Log 🎯',{
+          body:'New day, new score. Log your screen time now 🔥',
+          icon:'/scrollbye.png',
+          tag:'daily-reminder'
+        });
+        notif.onclick=function(){window.focus();goToSurvey();notif.close();};
+        scheduleReminder();
+      });
+    },delay);
+  }
+
+  scheduleReminder();
+}
+
+async function enableNotifications(){
+  var permission=await Notification.requestPermission();
+  document.getElementById('notif-prompt').style.display='none';
+  if(permission==='granted'){
+    setupMidnightReminder({loggedIn:true});
+    if(typeof showToast==='function')showToast('Reminders enabled — we\'ll notify you at midnight 🌙');
+  }
+}
+
+function goToSurvey(){
+  fetch('/api/my-progress').then(function(r){return r.json();}).then(function(prog){
+    location.href=(prog.loggedIn&&prog.lastLogDate)?'/log-today':'/survey';
+  }).catch(function(){location.href='/survey';});
+}
 </script>
 </body>
 </html>
