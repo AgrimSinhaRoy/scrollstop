@@ -722,6 +722,16 @@ app.delete('/log/:id', (req, res) => { legacySessions = legacySessions.filter(s 
 app.get('/insights', (req, res) => { const stats = getStats(); res.render('insights', { title: 'Insights', platformTotals: stats.platformTotals, sessions: legacySessions, goals }); });
 
 // ── 404 ───────────────────────────────────────────────────────
+// ── ONE-TIME CLEANUP (remove after use) ──────────────────────
+app.post('/api/admin/purge-except-agrim', requireAdmin, async (req, res) => {
+  const agrim = await User.findOne({ username: { $regex: /^agrim$/i } });
+  if (!agrim) return res.status(404).json({ error: 'agrim not found' });
+  const delUsers = await User.deleteMany({ id: { $ne: agrim.id } });
+  const delSubs  = await Submission.deleteMany({ userId: { $ne: agrim.id } });
+  const delChals = await Challenge.deleteMany({ challengerId: { $ne: agrim.id } });
+  res.json({ ok: true, deletedUsers: delUsers.deletedCount, deletedSubmissions: delSubs.deletedCount, deletedChallenges: delChals.deletedCount });
+});
+
 app.use((req, res) => res.status(404).render('404', { title: 'Page Not Found' }));
 
 app.listen(PORT, () => console.log(`ScrollStop running at http://localhost:${PORT}`));
