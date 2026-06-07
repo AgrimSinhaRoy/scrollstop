@@ -1183,7 +1183,15 @@ var _scoreData=null;
   var _claimPromise=Promise.resolve();
   if(_claimId){
     history.replaceState(null,'','/results');
-    _claimPromise=fetch('/api/claim-submission',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({submissionId:parseInt(_claimId)})}).catch(function(){});
+    var claimBody = JSON.stringify({submissionId: _claimId});
+    _claimPromise = fetch('/api/claim-submission', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: claimBody
+    })
+    .then(function(r){ return r.json().catch(function(){ return null; }); })
+    .then(function(res){ if(res && res.ok===false) console.warn('claim-submission failed', res); })
+    .catch(function(err){ console.warn('claim-submission error', err); });
   } else if(_directSubId){
     history.replaceState(null,'','/results');
   }
