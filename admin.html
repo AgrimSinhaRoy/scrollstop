@@ -108,6 +108,8 @@ td.muted{color:var(--muted);}
 .btn-ban:hover{background:rgba(255,180,0,0.25);}
 .btn-unban{background:rgba(67,233,123,0.14);color:var(--accent3);border:1px solid rgba(67,233,123,0.3);}
 .btn-unban:hover{background:rgba(67,233,123,0.25);}
+.btn-clear{background:rgba(255,179,71,0.14);color:#FFB347;border:1px solid rgba(255,179,71,0.3);}
+.btn-clear:hover{background:rgba(255,179,71,0.28);}
 .admin-tag{display:inline-flex;padding:2px 8px;background:rgba(255,107,107,0.15);border:1px solid rgba(255,107,107,0.3);border-radius:100px;font-size:11px;font-weight:700;color:var(--accent2);font-family:'Syne',sans-serif;}
 .banned-tag{display:inline-flex;padding:2px 8px;background:rgba(255,180,0,0.15);border:1px solid rgba(255,180,0,0.35);border-radius:100px;font-size:11px;font-weight:700;color:#FFD93D;font-family:'Syne',sans-serif;}
 
@@ -442,7 +444,8 @@ function renderUsers(list){
     var banBtn = u.isAdmin ? '' : isBanned
       ? '<button class="action-btn btn-unban" onclick="toggleBan('+u.id+',false,this)">Unban</button> '
       : '<button class="action-btn btn-ban" onclick="toggleBan('+u.id+',true,this)">Ban</button> ';
-    var deleteBtn = '<button class="action-btn btn-delete" onclick="deleteUser('+u.id+',this)">Delete</button>';
+    var clearBtn = '<button class="action-btn btn-clear" onclick="clearUserData('+u.id+',\''+escHtml(u.username)+'\',this)">Clear Data</button> ';
+    var deleteBtn = '<button class="action-btn btn-delete" onclick="deleteUser('+u.id+',\''+escHtml(u.username)+'\',this)">Delete</button>';
     return '<tr id="user-row-'+u.id+'" style="'+(isBanned?'opacity:0.55;':'')+'">'
       +'<td style="font-family:\'Syne\',sans-serif;font-weight:700;">'+u.username+'</td>'
       +'<td id="status-cell-'+u.id+'">'+statusHtml+'</td>'
@@ -451,7 +454,7 @@ function renderUsers(list){
       +'<td class="muted">'+(u.streak||0)+'🔥</td>'
       +'<td class="muted">Lv '+(u.level||1)+' '+(u.levelName||'')+'</td>'
       +'<td class="muted">'+fmtDateShort(u.lastLogDate)+'</td>'
-      +'<td id="actions-cell-'+u.id+'">'+makeAdminBtn+banBtn+deleteBtn+'</td>'
+      +'<td id="actions-cell-'+u.id+'">'+makeAdminBtn+banBtn+clearBtn+deleteBtn+'</td>'
       +'</tr>';
   }).join('');
 }
@@ -464,7 +467,7 @@ function makeAdmin(id, btn){
     .then(function(d){
       if(d.ok){
         document.getElementById('status-cell-'+id).innerHTML='<span class="admin-tag">Admin</span>';
-        document.getElementById('actions-cell-'+id).innerHTML='<button class="action-btn btn-delete" onclick="deleteUser('+id+',this)">Delete</button>';
+        document.getElementById('actions-cell-'+id).innerHTML='<button class="action-btn btn-clear" onclick="clearUserData('+id+',this)">Clear Data</button> <button class="action-btn btn-delete" onclick="deleteUser('+id+',this)">Delete</button>';
       } else {btn.disabled=false;btn.textContent='Make Admin';}
     }).catch(function(){btn.disabled=false;btn.textContent='Make Admin';});
 }
@@ -482,18 +485,18 @@ function toggleBan(id, ban, btn){
         if(ban){
           row.style.opacity='0.55';
           statusCell.innerHTML='<span class="banned-tag">⛔ Banned</span>';
-          actionsCell.innerHTML='<button class="action-btn btn-unban" onclick="toggleBan('+id+',false,this)">Unban</button> <button class="action-btn btn-delete" onclick="deleteUser('+id+',this)">Delete</button>';
+          actionsCell.innerHTML='<button class="action-btn btn-unban" onclick="toggleBan('+id+',false,this)">Unban</button> <button class="action-btn btn-clear" onclick="clearUserData('+id+',this)">Clear Data</button> <button class="action-btn btn-delete" onclick="deleteUser('+id+',this)">Delete</button>';
         } else {
           row.style.opacity='';
           statusCell.innerHTML='<span class="muted">User</span>';
-          actionsCell.innerHTML='<button class="action-btn btn-make-admin" onclick="makeAdmin('+id+',this)">Make Admin</button> <button class="action-btn btn-ban" onclick="toggleBan('+id+',true,this)">Ban</button> <button class="action-btn btn-delete" onclick="deleteUser('+id+',this)">Delete</button>';
+          actionsCell.innerHTML='<button class="action-btn btn-make-admin" onclick="makeAdmin('+id+',this)">Make Admin</button> <button class="action-btn btn-ban" onclick="toggleBan('+id+',true,this)">Ban</button> <button class="action-btn btn-clear" onclick="clearUserData('+id+',this)">Clear Data</button> <button class="action-btn btn-delete" onclick="deleteUser('+id+',this)">Delete</button>';
         }
       } else {btn.disabled=false;btn.textContent=ban?'Ban':'Unban';alert(d.error||'Action failed.');}
     }).catch(function(){btn.disabled=false;btn.textContent=ban?'Ban':'Unban';});
 }
 
-function deleteUser(id, btn){
-  if(!confirm('Permanently delete this user? This cannot be undone.')) return;
+function deleteUser(id, username, btn){
+  if(!confirm('Permanently delete \'' + (username||'this user') + '\' and all their data? This cannot be undone.')) return;
   btn.disabled=true;btn.textContent='…';
   fetch('/api/admin/user/'+id,{method:'DELETE'})
     .then(function(r){return r.json();})
@@ -501,12 +504,32 @@ function deleteUser(id, btn){
       if(d.ok){
         var row=document.getElementById('user-row-'+id);
         if(row) row.remove();
+        if(typeof showToast==='function') showToast('User deleted successfully');
       } else {
         btn.disabled=false;btn.textContent='Delete';
         alert(d.error||'Delete failed.');
       }
     }).catch(function(){btn.disabled=false;btn.textContent='Delete';});
 }
+
+function clearUserData(id, username, btn){
+  if(!confirm('Clear all leaderboard data for \'' + (username||'this user') + '\' and reset their XP to 0? This cannot be undone.')) return;
+  btn.disabled=true;btn.textContent='…';
+  fetch('/api/admin/clear-user-data/'+id,{method:'POST'})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.ok){
+        if(typeof showToast==='function') showToast('User data cleared from all leaderboards');
+        // Reload users table to reflect reset XP
+        fetch('/api/admin/users').then(function(r){return r.json();}).then(function(ul){renderUsers(ul);});
+      } else {
+        btn.disabled=false;btn.textContent='Clear Data';
+        alert(d.error||'Clear failed.');
+      }
+    }).catch(function(){btn.disabled=false;btn.textContent='Clear Data';});
+}
+
+function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 </script>
 </body>
 </html>

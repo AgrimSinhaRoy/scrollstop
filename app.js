@@ -28,6 +28,33 @@ mongoose.connect(MONGODB_URI).then(() => {
   process.exit(1);
 });
 
+async function ensureAdminAccount() {
+  try {
+    const existing = await User.findOne({ username: { $regex: /^admin$/i } });
+    if (existing) {
+      if (!existing.isAdmin) {
+        await User.updateOne({ username: { $regex: /^admin$/i } }, { $set: { isAdmin: true } });
+        console.log('✓ Admin privileges granted to existing admin account');
+      } else {
+        console.log('✓ Admin account already exists');
+      }
+      return;
+    }
+    const hash = await bcrypt.hash('Imagrim@123', 12);
+    await User.create({
+      id: Date.now(), username: 'admin', passwordHash: hash,
+      dob: '2000-01-01', createdAt: new Date().toISOString(),
+      isAdmin: true, banned: false, xp: 0, streak: 0,
+      level: 1, levelName: 'Dormant', lastLogDate: null, avatar: null
+    });
+    console.log('✓ Admin account created — username: admin, password: Imagrim@123');
+  } catch(e) {
+    console.error('Admin setup error:', e.message);
+  }
+}
+
+mongoose.connection.once('open', () => { ensureAdminAccount(); });
+
 // ── Mongoose Schemas ─────────────────────────────────────────
 const userSchema = new mongoose.Schema({
   id:           { type: Number, required: true, unique: true }, // kept for session compat
@@ -561,9 +588,14 @@ app.get('/api/admin/users', requireAdmin, async (req, res) => {
 app.delete('/api/admin/user/:id', requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id);
   if (id === req.session.userId) return res.status(400).json({ error: 'Cannot delete your own account' });
-  const result = await User.deleteOne({ id });
-  if (result.deletedCount === 0) return res.status(404).json({ error: 'User not found' });
-  res.json({ ok: true });
+  const user = await User.findOne({ id });
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  await User.deleteOne({ id });
+  await Submission.deleteMany({ $or: [{ userId: id }, { userId: String(id) }, { username: user.username }] });
+  await Challenge.deleteMany({ challengerId: id });
+  await Challenge.updateMany({ 'responses.responderName': user.username }, { $pull: { responses: { responderName: user.username } } });
+  console.log('Admin deleted user:', user.username, '— removed from all leaderboards and challenges');
+  res.json({ ok: true, message: 'User and all associated data deleted successfully' });
 });
 
 // ── POST /api/admin/make-admin ────────────────────────────────
@@ -581,6 +613,16 @@ app.post('/api/admin/ban-user', requireAdmin, async (req, res) => {
   const result = await User.updateOne({ id }, { $set: { banned: req.body.ban === true } });
   if (result.matchedCount === 0) return res.status(404).json({ error: 'User not found' });
   res.json({ ok: true, banned: req.body.ban === true });
+});
+
+// ── POST /api/admin/clear-user-data/:id ─────────────────────
+app.post('/api/admin/clear-user-data/:id', requireAdmin, async (req, res) => {
+  const id = parseInt(req.params.id);
+  const user = await User.findOne({ id });
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  await Submission.deleteMany({ $or: [{ userId: id }, { userId: String(id) }, { username: user.username }] });
+  await User.updateOne({ id }, { $set: { xp: 0, streak: 0, level: 1, levelName: 'Dormant', lastLogDate: null } });
+  res.json({ ok: true, message: 'User data cleared from all leaderboards' });
 });
 
 // ── Challenge routes ──────────────────────────────────────────
