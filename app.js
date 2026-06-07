@@ -185,7 +185,7 @@ const surveyLimiter = rateLimit({
 });
 
 app.use(session({
-  store: MongoStore.create({ mongoUrl: MONGODB_URI, dbName: 'scrollbye_dev', ttl: 86400 }),
+  store: MongoStore.create({ mongoUrl: MONGODB_URI, dbName: 'scrollbye_dev', ttl: 604800, touchAfter: 3600 }),
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
@@ -272,12 +272,14 @@ app.get('/admin', async (req, res) => {
 
 // ── GET /api/me ───────────────────────────────────────────────
 app.get('/api/me', async (req, res) => {
-  if (!req.session.userId) return res.json({ loggedIn: false });
-  const user = await User.findOne({ id: req.session.userId });
-  if (!user) { req.session.destroy(); return res.json({ loggedIn: false }); }
-  const newUser = !!req.session.newUser;
-  if (req.session.newUser) delete req.session.newUser;
-  res.json({ loggedIn: true, username: user.username, avatar: user.avatar || null, isAdmin: user.isAdmin || false, createdAt: user.createdAt || null, newUser });
+  try {
+    if (!req.session.userId) return res.json({ loggedIn: false });
+    const user = await User.findOne({ id: req.session.userId });
+    if (!user) { req.session.destroy(); return res.json({ loggedIn: false }); }
+    const newUser = !!req.session.newUser;
+    if (req.session.newUser) delete req.session.newUser;
+    res.json({ loggedIn: true, username: user.username, avatar: user.avatar || null, isAdmin: user.isAdmin || false, createdAt: user.createdAt || null, newUser });
+  } catch(e) { res.json({ loggedIn: false }); }
 });
 
 // ── POST /auth/login ──────────────────────────────────────────
@@ -463,6 +465,7 @@ app.post('/api/save-progress', async (req, res) => {
 
 // ── GET /api/my-submissions ───────────────────────────────────
 app.get('/api/my-submissions', async (req, res) => {
+  try {
   if (!req.session.userId) return res.json({ loggedIn: false, submissions: [] });
   const subs = await Submission.find({ userId: req.session.userId })
     .sort({ timestamp: -1 }).limit(30).lean();
@@ -480,42 +483,54 @@ app.get('/api/my-submissions', async (req, res) => {
     timestamp: s.timestamp
   })).sort((a, b) => a.date < b.date ? -1 : 1);
   res.json({ loggedIn: true, submissions: formatted });
+  } catch(e) { res.json({ loggedIn: false, submissions: [] }); }
 });
 
 // ── GET /api/my-progress ──────────────────────────────────────
 app.get('/api/my-progress', async (req, res) => {
-  if (!req.session.userId) return res.json({ loggedIn: false });
-  const user = await User.findOne({ id: req.session.userId });
-  if (!user) return res.json({ loggedIn: false });
-  res.json({ loggedIn: true, xp: user.xp || 0, streak: user.streak || 0, level: user.level || 1, levelName: user.levelName || 'Dormant', lastLogDate: user.lastLogDate || null });
+  try {
+    if (!req.session.userId) return res.json({ loggedIn: false });
+    const user = await User.findOne({ id: req.session.userId });
+    if (!user) return res.json({ loggedIn: false });
+    res.json({ loggedIn: true, xp: user.xp || 0, streak: user.streak || 0, level: user.level || 1, levelName: user.levelName || 'Dormant', lastLogDate: user.lastLogDate || null });
+  } catch(e) { res.json({ loggedIn: false }); }
 });
 
 // ── GET /api/my-latest-submission ─────────────────────────────
 app.get('/api/my-latest-submission', async (req, res) => {
-  if (!req.session.userId) return res.json({ ok: false, error: 'Not logged in' });
+  try {
+    if (!req.session.userId) return res.json({ ok: false, noData: true });
+    const user = await User.findOne({ id: req.session.userId });
+    if (!user) return res.json({ ok: false, noData: true });
+    const sub = await Submission.findOne({
+      $or: [
+        { userId: req.session.userId },
+        { userId: String(req.session.userId) },
+        {
+          username: { $regex: new RegExp('^' + user.username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i') },
+          userId: { $exists: false }
+        }
+      ]
+    }).sort({ timestamp: -1 });
+    if (!sub) return res.json({ ok: false, noData: true });
+    res.json({ ok: true, submission: sub });
+  } catch(e) { res.json({ ok: false, noData: true }); }
+});
 
-  const user = await User.findOne({ id: req.session.userId });
-  if (!user) return res.json({ ok: false, error: 'User not found' });
-
-  // Only match submissions that explicitly belong to this user
-  // Never fall back to other users' data
-  const sub = await Submission.findOne({
-    $or: [
-      { userId: req.session.userId },
-      { userId: String(req.session.userId) },
-      {
-        username: {
-          $regex: new RegExp('^' + user.username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i')
-        },
-        userId: { $exists: false }
-      }
-    ]
-  }).sort({ timestamp: -1 });
-
-  // If still no match — return noData, NEVER return another user's submission
-  if (!sub) return res.json({ ok: false, noData: true });
-
-  res.json({ ok: true, submission: sub });
+// ── GET /api/my-submission/:id ────────────────────────────────
+// Returns a specific submission if it belongs to the logged-in user
+app.get('/api/my-submission/:id', async (req, res) => {
+  try {
+    if (!req.session.userId) return res.json({ ok: false, error: 'Not logged in' });
+    const subId = parseInt(req.params.id);
+    if (!subId) return res.json({ ok: false, error: 'Invalid id' });
+    const sub = await Submission.findOne({
+      id: subId,
+      $or: [{ userId: req.session.userId }, { userId: String(req.session.userId) }]
+    });
+    if (!sub) return res.json({ ok: false, error: 'Not found' });
+    res.json({ ok: true, submission: sub });
+  } catch(e) { res.json({ ok: false, error: 'Server error' }); }
 });
 
 // ── GET /api/leaderboard ──────────────────────────────────────

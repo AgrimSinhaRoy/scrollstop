@@ -1179,10 +1179,13 @@ var _scoreData=null;
 
   // Claim anonymous submission if redirected here after login
   var _claimId=new URLSearchParams(location.search).get('claimId');
+  var _directSubId=new URLSearchParams(location.search).get('sub');
   var _claimPromise=Promise.resolve();
   if(_claimId){
     history.replaceState(null,'','/results');
     _claimPromise=fetch('/api/claim-submission',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({submissionId:parseInt(_claimId)})}).catch(function(){});
+  } else if(_directSubId){
+    history.replaceState(null,'','/results');
   }
 
   // 5-second timeout failsafe
@@ -1198,9 +1201,13 @@ var _scoreData=null;
   // Wait for claim to finish (if any) before fetching data to avoid race condition
   _claimPromise.then(function(){
   // Always fetch from server — no localStorage shortcut
+  // If ?sub= param is present, use it as a direct submission fallback alongside my-latest-submission
+  var subFetch=_directSubId
+    ?fetch('/api/my-submission/'+encodeURIComponent(_directSubId)).then(function(r){return r.json();}).catch(function(){return fetch('/api/my-latest-submission').then(function(r){return r.json();});})
+    :fetch('/api/my-latest-submission').then(function(r){return r.json();});
   Promise.all([
     fetch('/api/me').then(function(r){return r.json();}),
-    fetch('/api/my-latest-submission').then(function(r){return r.json();}),
+    subFetch,
     fetch('/api/my-progress').then(function(r){return r.json();}),
     fetch('/api/my-submissions').then(function(r){return r.json();})
   ]).then(function(results){

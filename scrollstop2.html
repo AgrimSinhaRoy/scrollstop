@@ -1706,6 +1706,9 @@ function submitForm(){
         var loginBtn=document.querySelector('.ss-gate-btn-login');
         if(signupBtn)signupBtn.href='/register?next='+claimNext;
         if(loginBtn)loginBtn.href='/login?next='+claimNext;
+        // For logged-in users: update the results CTA to include submission ID as direct fallback
+        var ctaBtn=document.querySelector('a[href="/results"]');
+        if(ctaBtn&&!_challengeToken)ctaBtn.href='/results?sub='+encodeURIComponent(d.id);
       }
       // If this was a challenge response, update the CTA button to go back to the challenge page
       if(_challengeToken){
