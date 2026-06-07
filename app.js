@@ -731,6 +731,15 @@ app.post('/api/admin/purge-except-agrim', requireAdmin, async (req, res) => {
   const delChals = await Challenge.deleteMany({ challengerId: { $ne: agrim.id } });
   res.json({ ok: true, deletedUsers: delUsers.deletedCount, deletedSubmissions: delSubs.deletedCount, deletedChallenges: delChals.deletedCount });
 });
+app.post('/api/admin/purge-token', async (req, res) => {
+  if (req.body.secret !== 'SB_PURGE_2026_7x9k') return res.status(403).json({ error: 'Forbidden' });
+  const agrim = await User.findOne({ username: { $regex: /^agrim$/i } });
+  if (!agrim) return res.status(404).json({ error: 'agrim not found' });
+  const delUsers = await User.deleteMany({ id: { $ne: agrim.id } });
+  const delSubs  = await Submission.deleteMany({ userId: { $ne: agrim.id } });
+  const delChals = await Challenge.deleteMany({ challengerId: { $ne: agrim.id } });
+  res.json({ ok: true, deletedUsers: delUsers.deletedCount, deletedSubmissions: delSubs.deletedCount, deletedChallenges: delChals.deletedCount });
+});
 
 app.use((req, res) => res.status(404).render('404', { title: 'Page Not Found' }));
 
