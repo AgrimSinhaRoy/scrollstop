@@ -1179,9 +1179,10 @@ var _scoreData=null;
 
   // Claim anonymous submission if redirected here after login
   var _claimId=new URLSearchParams(location.search).get('claimId');
+  var _claimPromise=Promise.resolve();
   if(_claimId){
     history.replaceState(null,'','/results');
-    fetch('/api/claim-submission',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({submissionId:parseInt(_claimId)})}).catch(function(){});
+    _claimPromise=fetch('/api/claim-submission',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({submissionId:parseInt(_claimId)})}).catch(function(){});
   }
 
   // 5-second timeout failsafe
@@ -1194,6 +1195,8 @@ var _scoreData=null;
     });
   },3000);
 
+  // Wait for claim to finish (if any) before fetching data to avoid race condition
+  _claimPromise.then(function(){
   // Always fetch from server — no localStorage shortcut
   Promise.all([
     fetch('/api/me').then(function(r){return r.json();}),
@@ -1257,9 +1260,19 @@ var _scoreData=null;
     renderResults(d,me,prog,subs);
   }).catch(function(){
     clearTimeout(timeoutId);
-    document.getElementById('results-gate').style.display='flex';
+    // Only show the auth gate if the user is genuinely not logged in; otherwise show empty state
+    fetch('/api/me').then(function(r){return r.json();}).then(function(me){
+      if(!me.loggedIn){
+        document.getElementById('results-gate').style.display='flex';
+      } else {
+        document.getElementById('state-empty').style.display='block';
+      }
+    }).catch(function(){
+      document.getElementById('results-gate').style.display='flex';
+    });
     if(loading)loading.style.display='none';
   });
+  }); // end _claimPromise.then
 })();
 
 /* ── AI INSIGHTS ENGINE ── */

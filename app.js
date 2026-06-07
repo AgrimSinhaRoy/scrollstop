@@ -297,7 +297,10 @@ app.post('/auth/login', authLimiter, async (req, res) => {
     req.session.userId   = user.id;
     req.session.username = user.username;
     req.session.cookie.maxAge = maxAge;
-    res.json({ ok: true, redirect: '/' });
+    req.session.save(function(saveErr) {
+      if (saveErr) return res.json({ ok: false, error: 'Session error. Please try again.' });
+      res.json({ ok: true, redirect: '/' });
+    });
   });
 });
 
@@ -320,7 +323,10 @@ app.post('/auth/register', authLimiter, async (req, res) => {
     if (err) return res.json({ ok: false, error: 'Session error. Please try again.' });
     req.session.userId   = user.id;
     req.session.username = user.username;
-    res.json({ ok: true, redirect: '/' });
+    req.session.save(function(saveErr) {
+      if (saveErr) return res.json({ ok: false, error: 'Session error. Please try again.' });
+      res.json({ ok: true, redirect: '/' });
+    });
   });
 });
 
